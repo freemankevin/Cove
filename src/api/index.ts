@@ -5,6 +5,11 @@ const api = axios.create({
   timeout: 10000,
 })
 
+const longTimeoutApi = axios.create({
+  baseURL: '/api',
+  timeout: 180000,
+})
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('dockpull_token')
   if (token) {
@@ -13,7 +18,28 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+longTimeoutApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('dockpull_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('dockpull_token')
+      localStorage.removeItem('dockpull_user')
+      localStorage.removeItem('dockpull_config')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+longTimeoutApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -67,9 +93,13 @@ export const statsApi = {
 }
 
 export const localImagesApi = {
-  list: () => api.get('/local-images'),
-  delete: (id: string, force?: boolean) => api.delete(`/local-images/${id}`, { params: { force } }),
-  export: (id: string, exportPath?: string) => api.post(`/local-images/${id}/export`, { export_path: exportPath }),
+  list: () => longTimeoutApi.get('/local-images'),
+  delete: (id: string, force?: boolean) => longTimeoutApi.delete(`/local-images/${id}`, { params: { force } }),
+  export: (id: string, exportPath?: string) => longTimeoutApi.post(`/local-images/${id}/export`, { export_path: exportPath }),
+}
+
+export const operationsApi = {
+  status: () => api.get('/operations/status'),
 }
 
 export default api

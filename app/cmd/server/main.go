@@ -203,6 +203,7 @@ func main() {
 		api.GET("/local-images", h.ListLocalImages)
 		api.DELETE("/local-images/:id", h.DeleteLocalImage)
 		api.POST("/local-images/:id/export", h.ExportLocalImage)
+		api.GET("/operations/status", h.GetOperationStatus)
 		api.GET("/config", h.GetConfig)
 		api.PUT("/config", h.UpdateConfig)
 		api.GET("/config/detect-runtime", h.DetectRuntime)

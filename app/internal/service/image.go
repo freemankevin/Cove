@@ -13,14 +13,18 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type ImageService struct {
-	db      *sql.DB
-	docker  *docker.DockerService
-	cfg     *config.Config
-	webhook *WebhookService
+	db            *sql.DB
+	docker        *docker.DockerService
+	cfg           *config.Config
+	webhook       *WebhookService
+	pullingCount  atomic.Int32
+	exportingCount atomic.Int32
+	pullingMutex  sync.Mutex
 }
 
 func NewImageService(db *sql.DB, dockerSvc *docker.DockerService, cfg *config.Config, webhookSvc *WebhookService) *ImageService {
@@ -29,6 +33,17 @@ func NewImageService(db *sql.DB, dockerSvc *docker.DockerService, cfg *config.Co
 		docker:  dockerSvc,
 		cfg:     cfg,
 		webhook: webhookSvc,
+	}
+}
+
+func (s *ImageService) IsBusy() bool {
+	return s.pullingCount.Load() > 0 || s.exportingCount.Load() > 0
+}
+
+func (s *ImageService) GetActiveOperations() map[string]int {
+	return map[string]int{
+		"pulling":  int(s.pullingCount.Load()),
+		"exporting": int(s.exportingCount.Load()),
 	}
 }
 
@@ -116,6 +131,9 @@ func (s *ImageService) ProcessPendingImages() {
 func (s *ImageService) processImage(img *models.Image) {
 	ctx := context.Background()
 
+	s.pullingCount.Add(1)
+	defer s.pullingCount.Add(-1)
+
 	database.UpdateImageStatus(s.db, img.ID, "pulling", "")
 	s.logAction(img.ID, "PULL_START", fmt.Sprintf("Starting pull for %s", img.FullName))
 
@@ -156,6 +174,9 @@ func (s *ImageService) ExportImage(imageID int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	s.exportingCount.Add(1)
+	defer s.exportingCount.Add(-1)
 
 	ctx := context.Background()
 	s.logAction(imageID, "EXPORT_START", fmt.Sprintf("Starting export for %s", img.FullName))

@@ -4,7 +4,9 @@ import (
 	"context"
 	"docker-pull-manager/internal/database"
 	"docker-pull-manager/internal/models"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,10 +26,34 @@ func (h *Handler) logLocalAction(action, message string) {
 	database.CreateLog(h.db, log)
 }
 
+func (h *Handler) GetOperationStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"busy":       h.imageService.IsBusy(),
+		"operations": h.imageService.GetActiveOperations(),
+	})
+}
+
 func (h *Handler) ListLocalImages(c *gin.Context) {
-	ctx := context.Background()
+	if h.imageService.IsBusy() {
+		ops := h.imageService.GetActiveOperations()
+		c.JSON(http.StatusAccepted, gin.H{
+			"status":     "busy",
+			"message":    fmt.Sprintf("Container runtime is busy: %d pulls, %d exports in progress. Please wait...", ops["pulling"], ops["exporting"]),
+			"operations": ops,
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
 	images, err := h.dockerService.ListLocalImages(ctx)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: listing images took too long, container runtime may be busy"})
+			return
+		}
+		h.logLocalAction("LOCAL_LIST_FAILED", fmt.Sprintf("Failed to list local images: %s", err.Error()))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -41,10 +67,15 @@ func (h *Handler) DeleteLocalImage(c *gin.Context) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
 
 	images, err := h.dockerService.ListLocalImages(ctx)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: listing images took too long"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -61,8 +92,16 @@ func (h *Handler) DeleteLocalImage(c *gin.Context) {
 	force := c.Query("force") == "true"
 	h.logLocalAction("LOCAL_DELETE_START", "Starting delete for "+repoTag+" ("+arch+")")
 
-	err = h.dockerService.DeleteLocalImage(ctx, imageID, force)
+	deleteCtx, deleteCancel := context.WithTimeout(context.Background(), 180*time.Second)
+	defer deleteCancel()
+
+	err = h.dockerService.DeleteLocalImage(deleteCtx, imageID, force)
 	if err != nil {
+		if deleteCtx.Err() == context.DeadlineExceeded {
+			h.logLocalAction("LOCAL_DELETE_FAILED", "Timeout while deleting "+repoTag)
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: delete operation took too long"})
+			return
+		}
 		h.logLocalAction("LOCAL_DELETE_FAILED", "Failed to delete "+repoTag+": "+err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -84,9 +123,15 @@ func (h *Handler) ExportLocalImage(c *gin.Context) {
 		req.ExportPath = h.cfg.ExportPath
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
 	images, err := h.dockerService.ListLocalImages(ctx)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: listing images took too long"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -108,8 +153,16 @@ func (h *Handler) ExportLocalImage(c *gin.Context) {
 
 	h.logLocalAction("LOCAL_EXPORT_START", "Starting export for "+repoTag+" ("+architecture+")")
 
-	exportPath, err := h.dockerService.ExportLocalImage(ctx, repoTag, architecture, req.ExportPath)
+	exportCtx, exportCancel := context.WithTimeout(context.Background(), 300*time.Second)
+	defer exportCancel()
+
+	exportPath, err := h.dockerService.ExportLocalImage(exportCtx, repoTag, architecture, req.ExportPath)
 	if err != nil {
+		if exportCtx.Err() == context.DeadlineExceeded {
+			h.logLocalAction("LOCAL_EXPORT_FAILED", "Timeout while exporting "+repoTag)
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: export operation took too long"})
+			return
+		}
 		h.logLocalAction("LOCAL_EXPORT_FAILED", "Failed to export "+repoTag+": "+err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

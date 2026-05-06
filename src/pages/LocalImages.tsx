@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Trash2, Download, RefreshCw } from 'lucide-react'
-import { localImagesApi } from '../api'
+import { Trash2, Download, RefreshCw, AlertTriangle, Clock } from 'lucide-react'
+import { localImagesApi, operationsApi } from '../api'
 import { useLanguage } from '../context/LanguageContext'
 import { useToast } from '../context/ToastContext'
 import { useNotification } from '../context/NotificationContext'
@@ -33,6 +33,8 @@ export default function LocalImages() {
   const { config } = useConfig()
   const [images, setImages] = useState<LocalImage[]>([])
   const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [busyMessage, setBusyMessage] = useState('')
   const [exporting, setExporting] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
@@ -43,6 +45,17 @@ export default function LocalImages() {
     }
     try {
       const res = await localImagesApi.list()
+      if (res.status === 202 && res.data?.status === 'busy') {
+        setBusy(true)
+        setBusyMessage(res.data.message || 'Container runtime is busy')
+        setImages([])
+        if (isInitial) {
+          addNotification('warning', res.data.message || 'Container runtime is busy')
+        }
+        return
+      }
+      setBusy(false)
+      setBusyMessage('')
       const uniqueImages: LocalImage[] = []
       const seenIds = new Set<string>()
       for (const img of res.data || []) {
@@ -52,6 +65,9 @@ export default function LocalImages() {
         }
       }
       setImages(uniqueImages)
+      if (isInitial) {
+        addNotification('success', `Loaded ${uniqueImages.length} local images`)
+      }
     } catch (err: any) {
       if (isInitial) {
         const errorMsg = err.response?.data?.error || err.message || 'Unknown error'
@@ -63,11 +79,29 @@ export default function LocalImages() {
     }
   }, [showToast, t, addNotification])
 
+  const checkBusyStatus = useCallback(async () => {
+    try {
+      const res = await operationsApi.status()
+      const ops = res.data?.operations || {}
+      if (ops.pulling > 0 || ops.exporting > 0) {
+        setBusy(true)
+        setBusyMessage(`${ops.pulling} pulls, ${ops.exporting} exports in progress`)
+      } else {
+        setBusy(false)
+        setBusyMessage('')
+      }
+    } catch {
+    }
+  }, [])
+
   useEffect(() => {
     fetchImages(true)
-    const interval = setInterval(() => fetchImages(false), 30000)
+    const interval = setInterval(() => {
+      checkBusyStatus()
+      fetchImages(false)
+    }, 30000)
     return () => clearInterval(interval)
-  }, [fetchImages])
+  }, [fetchImages, checkBusyStatus])
 
   const handleDelete = async (imageId: string, repository: string, arch: string) => {
     if (deleting) return
@@ -139,6 +173,34 @@ export default function LocalImages() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
               <div className="spin" style={{ width: '18px', height: '18px', border: '2px solid var(--border-color)', borderTopColor: 'var(--purple-500)', borderRadius: '50%' }} />
               {t('localImages.loading')}
+            </div>
+          </div>
+        </div>
+      ) : busy ? (
+        <div className="empty-state-wrapper">
+          <div className="empty-state">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+              <AlertTriangle size={48} style={{ color: 'var(--orange-500)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  {t('localImages.busy.title')}
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                  {busyMessage}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                  <Clock size={14} />
+                  {t('localImages.busy.autoRetry')}
+                </div>
+              </div>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => fetchImages(true)}
+                style={{ marginTop: '8px' }}
+              >
+                <RefreshCw size={14} />
+                {t('localImages.busy.retryNow')}
+              </button>
             </div>
           </div>
         </div>

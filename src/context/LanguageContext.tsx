@@ -287,6 +287,9 @@ const translations: Record<Language, Record<string, string>> = {
     'localImages.deleteConfirm': 'Are you sure you want to delete {image}? This cannot be undone.',
     'localImages.empty.title': 'No local images found',
     'localImages.empty.desc': 'Pull images first to manage them locally',
+    'localImages.busy.title': 'Container Runtime Busy',
+    'localImages.busy.autoRetry': 'Auto-refreshing every 30 seconds...',
+    'localImages.busy.retryNow': 'Retry Now',
 
     'modal.addImage': 'Add Image',
     'modal.batchMode': 'Batch Mode',
@@ -580,6 +583,9 @@ const translations: Record<Language, Record<string, string>> = {
     'localImages.deleteConfirm': '确定要删除 {image} 吗？此操作无法撤销。',
     'localImages.empty.title': '未找到本地镜像',
     'localImages.empty.desc': '请先拉取镜像再进行本地管理',
+    'localImages.busy.title': '容器运行时繁忙',
+    'localImages.busy.autoRetry': '每30秒自动刷新...',
+    'localImages.busy.retryNow': '立即重试',
 
     'modal.addImage': '添加镜像',
     'modal.batchMode': '批量模式',
