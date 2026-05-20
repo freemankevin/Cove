@@ -22,7 +22,7 @@ export function useConfig() {
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<Config | null>(() => {
-    const cached = localStorage.getItem('dockpull_config')
+    const cached = localStorage.getItem('cove_config')
     if (cached) {
       try {
         return JSON.parse(cached)
@@ -40,7 +40,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       const res = await configApi.get()
       setConfig(res.data)
       setError(null)
-      localStorage.setItem('dockpull_config', JSON.stringify(res.data))
+      localStorage.setItem('cove_config', JSON.stringify(res.data))
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -56,7 +56,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (config) {
-      localStorage.setItem('dockpull_config', JSON.stringify(config))
+      localStorage.setItem('cove_config', JSON.stringify(config))
     }
   }, [config])
 

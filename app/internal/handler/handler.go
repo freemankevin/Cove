@@ -2,9 +2,9 @@ package handler
 
 import (
 	"database/sql"
-	"docker-pull-manager/internal/config"
-	"docker-pull-manager/internal/docker"
-	"docker-pull-manager/internal/service"
+	"cove/internal/config"
+	"cove/internal/docker"
+	"cove/internal/service"
 )
 
 type Handler struct {

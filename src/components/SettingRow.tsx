@@ -10,8 +10,8 @@ function SettingRow({
       display: 'flex', flexDirection: 'column', gap: '8px',
     }}>
       <div>
-        <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>{label}</div>
-        {hint && <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{hint}</div>}
+        <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '2px' }}>{label}</div>
+        {hint && <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{hint}</div>}
       </div>
       <div style={{ marginTop: '4px' }}>{children}</div>
     </div>

@@ -7,7 +7,7 @@ export default function Registries() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '镜像仓库 - DockerPull 文档' : 'Registries - DockerPull Documentation'
+    document.title = language === 'zh' ? '镜像仓库 - Cove 文档' : 'Registries - Cove Documentation'
   }, [language])
 
   return (

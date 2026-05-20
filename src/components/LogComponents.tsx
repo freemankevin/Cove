@@ -53,7 +53,7 @@ export function ActionBadge({ action }: { action: string }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '5px',
       padding: '3px 10px', borderRadius: 'var(--radius-card)',
-      fontSize: '12px', fontWeight: 500,
+      fontSize: '13px', fontWeight: 500,
       color: meta.color, background: meta.bg,
       border: `1px solid ${meta.border}`,
       whiteSpace: 'nowrap', flexShrink: 0,
@@ -100,7 +100,7 @@ style={{
            borderRadius: 'var(--radius-xs)', cursor: 'pointer',
            background: value !== 'all' ? 'var(--accent-bg)' : 'var(--bg-tertiary)',
            color: value !== 'all' ? 'var(--purple-400)' : 'var(--text-secondary)',
-           fontSize: '13px', fontWeight: 400,
+           fontSize: '14px', fontWeight: 400,
            whiteSpace: 'nowrap', transition: 'all .12s',
          }}
       >
@@ -124,7 +124,7 @@ style={{
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false) }}
               style={{
-                padding: '8px 12px', fontSize: '13px', cursor: 'pointer',
+                padding: '8px 12px', fontSize: '14px', cursor: 'pointer',
                 color: opt.value === value ? 'var(--purple-400)' : 'var(--text-primary)',
                 background: opt.value === value ? 'var(--accent-bg)' : 'transparent',
                 transition: 'background .1s',

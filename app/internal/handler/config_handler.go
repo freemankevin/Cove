@@ -1,10 +1,12 @@
 package handler
 
 import (
-	"docker-pull-manager/internal/database"
-	"docker-pull-manager/internal/docker"
-	"docker-pull-manager/internal/models"
+	"cove/internal/database"
+	"cove/internal/docker"
+	"cove/internal/models"
+	"encoding/json"
 	"net/http"
+	"runtime"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +23,8 @@ func (h *Handler) GetConfig(c *gin.Context) {
 		"default_platform":      h.cfg.DefaultPlatform,
 		"gzip_compression":      h.cfg.GzipCompression,
 		"container_runtime":     h.cfg.ContainerRuntime,
+		"docker_host":           h.cfg.DockerHost,
+		"docker_host_timeout":   h.cfg.DockerHostTimeout,
 		"ghcr_token":            h.cfg.GhcrToken,
 		"ghcr_username":         h.cfg.GhcrUsername,
 		"ghcr_verified":         h.cfg.GhcrVerified,
@@ -44,6 +48,7 @@ func (h *Handler) GetConfig(c *gin.Context) {
 		"harbor_password":       h.cfg.HarborPassword,
 		"harbor_tls_cert":       h.cfg.HarborTlsCert,
 		"harbor_verified":       h.cfg.HarborVerified,
+		"harbor_configs":        h.cfg.HarborConfigs,
 		"tencentcloud_username": h.cfg.TencentcloudUsername,
 		"tencentcloud_password": h.cfg.TencentcloudPassword,
 		"tencentcloud_verified": h.cfg.TencentcloudVerified,
@@ -88,6 +93,17 @@ func (h *Handler) UpdateConfig(c *gin.Context) {
 	if req.ContainerRuntime != "" {
 		h.cfg.ContainerRuntime = req.ContainerRuntime
 	}
+	// DockerHost can be empty to clear the override, so always update it
+	oldHost := h.cfg.DockerHost
+	h.cfg.DockerHost = req.DockerHost
+	if req.DockerHostTimeout > 0 {
+		h.cfg.DockerHostTimeout = req.DockerHostTimeout
+	}
+
+	// Reset Docker client if host or runtime changed
+	if oldHost != req.DockerHost || req.ContainerRuntime != "" {
+		h.dockerService.ResetClient()
+	}
 
 	h.cfg.GhcrToken = req.GhcrToken
 	h.cfg.GhcrUsername = req.GhcrUsername
@@ -112,6 +128,9 @@ func (h *Handler) UpdateConfig(c *gin.Context) {
 	h.cfg.HarborPassword = req.HarborPassword
 	h.cfg.HarborTlsCert = req.HarborTlsCert
 	h.cfg.HarborVerified = req.HarborVerified
+	if req.HarborConfigs != nil {
+		h.cfg.HarborConfigs = req.HarborConfigs
+	}
 	h.cfg.TencentcloudUsername = req.TencentcloudUsername
 	h.cfg.TencentcloudPassword = req.TencentcloudPassword
 	h.cfg.TencentcloudVerified = req.TencentcloudVerified
@@ -130,6 +149,8 @@ func (h *Handler) UpdateConfig(c *gin.Context) {
 		DefaultPlatform:      h.cfg.DefaultPlatform,
 		GzipCompression:      h.cfg.GzipCompression,
 		ContainerRuntime:     h.cfg.ContainerRuntime,
+		DockerHost:           h.cfg.DockerHost,
+		DockerHostTimeout:    h.cfg.DockerHostTimeout,
 		GhcrToken:            h.cfg.GhcrToken,
 		GhcrUsername:         h.cfg.GhcrUsername,
 		GhcrVerified:         h.cfg.GhcrVerified,
@@ -153,12 +174,19 @@ func (h *Handler) UpdateConfig(c *gin.Context) {
 		HarborPassword:       h.cfg.HarborPassword,
 		HarborTlsCert:        h.cfg.HarborTlsCert,
 		HarborVerified:       h.cfg.HarborVerified,
+		HarborConfigsJSON:    "[]",
 		TencentcloudUsername: h.cfg.TencentcloudUsername,
 		TencentcloudPassword: h.cfg.TencentcloudPassword,
 		TencentcloudVerified: h.cfg.TencentcloudVerified,
 		HuaweicloudUsername:  h.cfg.HuaweicloudUsername,
 		HuaweicloudPassword:  h.cfg.HuaweicloudPassword,
 		HuaweicloudVerified:  h.cfg.HuaweicloudVerified,
+	}
+
+	if h.cfg.HarborConfigs != nil {
+		if jsonBytes, err := json.Marshal(h.cfg.HarborConfigs); err == nil {
+			settings.HarborConfigsJSON = string(jsonBytes)
+		}
 	}
 
 	if err := database.UpdateSettings(h.db, settings); err != nil {
@@ -177,6 +205,8 @@ func (h *Handler) UpdateConfig(c *gin.Context) {
 		"default_platform":      h.cfg.DefaultPlatform,
 		"gzip_compression":      h.cfg.GzipCompression,
 		"container_runtime":     h.cfg.ContainerRuntime,
+		"docker_host":           h.cfg.DockerHost,
+		"docker_host_timeout":   h.cfg.DockerHostTimeout,
 		"ghcr_token":            h.cfg.GhcrToken,
 		"ghcr_username":         h.cfg.GhcrUsername,
 		"ghcr_verified":         h.cfg.GhcrVerified,
@@ -200,6 +230,7 @@ func (h *Handler) UpdateConfig(c *gin.Context) {
 		"harbor_password":       h.cfg.HarborPassword,
 		"harbor_tls_cert":       h.cfg.HarborTlsCert,
 		"harbor_verified":       h.cfg.HarborVerified,
+		"harbor_configs":        h.cfg.HarborConfigs,
 		"tencentcloud_username": h.cfg.TencentcloudUsername,
 		"tencentcloud_password": h.cfg.TencentcloudPassword,
 		"tencentcloud_verified": h.cfg.TencentcloudVerified,
@@ -236,4 +267,46 @@ func (h *Handler) DetectRuntime(c *gin.Context) {
 		"current_runtime":   currentRuntime,
 		"recommended":       recommended,
 	})
+}
+
+func (h *Handler) TestDockerHost(c *gin.Context) {
+	var req struct {
+		DockerHost        string `json:"docker_host"`
+		DockerHostTimeout int    `json:"docker_host_timeout"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	host := req.DockerHost
+	if host == "" {
+		host = h.cfg.DockerHost
+	}
+	if host == "" {
+		if runtime.GOOS == "windows" {
+			if detected := docker.DetectRemoteDockerHost(); detected != "" {
+				host = detected
+			} else {
+				host = "npipe:////./pipe/docker_engine"
+			}
+		} else {
+			host = "unix:///var/run/docker.sock"
+		}
+	}
+
+	timeout := req.DockerHostTimeout
+	if timeout <= 0 {
+		timeout = h.cfg.DockerHostTimeout
+	}
+	if timeout <= 0 {
+		timeout = 180
+	}
+
+	if err := docker.TestDockerHost(host, timeout); err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "docker host is reachable", "host": host})
 }

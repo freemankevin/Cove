@@ -2,13 +2,14 @@ package database
 
 import (
 	"database/sql"
-	"docker-pull-manager/internal/config"
-	"docker-pull-manager/internal/models"
+
+	"cove/internal/config"
+	"cove/internal/models"
 )
 
 func GetSettings(db *sql.DB) (*models.Settings, error) {
 	query := `SELECT export_path, retry_max_attempts, retry_interval_sec, enable_webhook,
-			  webhook_url, webhook_type, concurrent_pulls, default_platform, gzip_compression, 
+			  webhook_url, webhook_type, concurrent_pulls, default_platform, gzip_compression,
 			  ghcr_token, ghcr_username, ghcr_verified,
 			  dockerhub_username, dockerhub_token, dockerhub_verified,
 			  quay_username, quay_password, quay_verified,
@@ -18,7 +19,7 @@ func GetSettings(db *sql.DB) (*models.Settings, error) {
 			  harbor_url, harbor_username, harbor_password, harbor_tls_cert, harbor_verified,
 			  tencentcloud_username, tencentcloud_password, tencentcloud_verified,
 			  huaweicloud_username, huaweicloud_password, huaweicloud_verified,
-			  container_runtime
+			  container_runtime, docker_host, docker_host_timeout, harbor_configs
 			  FROM settings WHERE id = 1`
 
 	var exportPath, webhookURL, webhookType, defaultPlatform, ghcrToken, ghcrUsername sql.NullString
@@ -26,11 +27,13 @@ func GetSettings(db *sql.DB) (*models.Settings, error) {
 	var ecrAccessKeyId, ecrSecretAccessKey, ecrRegion, garToken sql.NullString
 	var harborUrl, harborUsername, harborPassword, harborTlsCert sql.NullString
 	var tencentcloudUsername, tencentcloudPassword sql.NullString
-	var huaweicloudUsername, huaweicloudPassword, containerRuntime sql.NullString
+	var huaweicloudUsername, huaweicloudPassword, containerRuntime, dockerHost sql.NullString
+	var dockerHostTimeout sql.NullInt64
 	var retryMaxAttempts, retryIntervalSec, concurrentPulls, gzipCompression sql.NullInt64
 	var enableWebhook sql.NullBool
 	var ghcrVerified, dockerhubVerified, quayVerified, acrVerified, ecrVerified, garVerified sql.NullBool
 	var harborVerified, tencentcloudVerified, huaweicloudVerified sql.NullBool
+	var harborConfigs sql.NullString
 
 	err := db.QueryRow(query).Scan(
 		&exportPath, &retryMaxAttempts, &retryIntervalSec, &enableWebhook,
@@ -44,7 +47,7 @@ func GetSettings(db *sql.DB) (*models.Settings, error) {
 		&harborUrl, &harborUsername, &harborPassword, &harborTlsCert, &harborVerified,
 		&tencentcloudUsername, &tencentcloudPassword, &tencentcloudVerified,
 		&huaweicloudUsername, &huaweicloudPassword, &huaweicloudVerified,
-		&containerRuntime,
+		&containerRuntime, &dockerHost, &dockerHostTimeout, &harborConfigs,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -81,6 +84,7 @@ func GetSettings(db *sql.DB) (*models.Settings, error) {
 				HarborPassword:       "",
 				HarborTlsCert:        "",
 				HarborVerified:       false,
+				HarborConfigsJSON:    "[]",
 				TencentcloudUsername: "",
 				TencentcloudPassword: "",
 				TencentcloudVerified: false,
@@ -88,6 +92,7 @@ func GetSettings(db *sql.DB) (*models.Settings, error) {
 				HuaweicloudPassword:  "",
 				HuaweicloudVerified:  false,
 				ContainerRuntime:     "docker",
+				DockerHostTimeout:    180,
 			}, nil
 		}
 		return nil, err
@@ -126,6 +131,7 @@ func GetSettings(db *sql.DB) (*models.Settings, error) {
 		HarborPassword:       nullStringToVal(harborPassword, ""),
 		HarborTlsCert:        nullStringToVal(harborTlsCert, ""),
 		HarborVerified:       nullBoolToVal(harborVerified, false),
+		HarborConfigsJSON:    nullStringToVal(harborConfigs, "[]"),
 		TencentcloudUsername: nullStringToVal(tencentcloudUsername, ""),
 		TencentcloudPassword: nullStringToVal(tencentcloudPassword, ""),
 		TencentcloudVerified: nullBoolToVal(tencentcloudVerified, false),
@@ -133,6 +139,8 @@ func GetSettings(db *sql.DB) (*models.Settings, error) {
 		HuaweicloudPassword:  nullStringToVal(huaweicloudPassword, ""),
 		HuaweicloudVerified:  nullBoolToVal(huaweicloudVerified, false),
 		ContainerRuntime:     nullStringToVal(containerRuntime, "docker"),
+		DockerHost:           nullStringToVal(dockerHost, ""),
+		DockerHostTimeout:    nullIntToVal(dockerHostTimeout, 180),
 	}, nil
 }
 
@@ -198,8 +206,16 @@ func UpdateSettings(db *sql.DB, s *models.Settings) error {
 			  huaweicloud_password = ?,
 			  huaweicloud_verified = ?,
 			  container_runtime = ?,
+			  docker_host = ?,
+			  docker_host_timeout = ?,
+			  harbor_configs = ?,
 			  updated_at = CURRENT_TIMESTAMP
 			  WHERE id = 1`
+
+	harborJSON := s.HarborConfigsJSON
+	if harborJSON == "" {
+		harborJSON = "[]"
+	}
 
 	_, err := db.Exec(query,
 		s.ExportPath, s.RetryMaxAttempts, s.RetryIntervalSec, s.EnableWebhook,
@@ -213,7 +229,8 @@ func UpdateSettings(db *sql.DB, s *models.Settings) error {
 		s.HarborUrl, s.HarborUsername, s.HarborPassword, s.HarborTlsCert, s.HarborVerified,
 		s.TencentcloudUsername, s.TencentcloudPassword, s.TencentcloudVerified,
 		s.HuaweicloudUsername, s.HuaweicloudPassword, s.HuaweicloudVerified,
-		s.ContainerRuntime,
+		s.ContainerRuntime, s.DockerHost,
+		s.DockerHostTimeout, harborJSON,
 	)
 	return err
 }

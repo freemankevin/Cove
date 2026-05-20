@@ -70,6 +70,9 @@ func migrateDatabase(db *sql.DB) error {
 		"harbor_verified BOOLEAN DEFAULT 0",
 		"tencentcloud_verified BOOLEAN DEFAULT 0",
 		"huaweicloud_verified BOOLEAN DEFAULT 0",
+		"docker_host TEXT DEFAULT ''",
+		"docker_host_timeout INTEGER DEFAULT 180",
+		"harbor_configs TEXT DEFAULT '[]'",
 	}
 
 	for _, column := range columns {

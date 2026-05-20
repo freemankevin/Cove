@@ -1,12 +1,12 @@
 package main
 
 import (
-	"docker-pull-manager/internal/config"
-	"docker-pull-manager/internal/database"
-	"docker-pull-manager/internal/docker"
-	"docker-pull-manager/internal/handler"
-	"docker-pull-manager/internal/middleware"
-	"docker-pull-manager/internal/service"
+	"cove/internal/config"
+	"cove/internal/database"
+	"cove/internal/docker"
+	"cove/internal/handler"
+	"cove/internal/middleware"
+	"cove/internal/service"
 	"flag"
 	"fmt"
 	"os"
@@ -109,6 +109,7 @@ func main() {
 	if currentRuntime == "" {
 		currentRuntime = "docker"
 	}
+	autoDetectedHost := ""
 
 	if currentRuntime == "docker" && !dockerAvailable && podmanAvailable {
 		cfg.ContainerRuntime = "podman"
@@ -123,14 +124,29 @@ func main() {
 		fmt.Printf("\033[33m%s [INFO] ⚠ Podman 不可用，自动切换到 Docker\033[0m\n",
 			time.Now().Format("2006-01-02 15:04:05"))
 	} else if !dockerAvailable && !podmanAvailable {
-		fmt.Printf("\033[31m%s [ERROR] ⚠ Docker 和 Podman 都不可用，请安装并启动容器运行时\033[0m\n",
-			time.Now().Format("2006-01-02 15:04:05"))
+		if cfg.DockerHost != "" {
+			fmt.Printf("\033[33m%s [WARN] ⚠ 本地未检测到 Docker/Podman，将使用配置的 Docker Host: %s\033[0m\n",
+				time.Now().Format("2006-01-02 15:04:05"), cfg.DockerHost)
+		} else if remoteHost := docker.DetectRemoteDockerHost(); remoteHost != "" {
+			autoDetectedHost = remoteHost
+			fmt.Printf("\033[32m%s [INFO] ✓ 本地未检测到 Docker/Podman，但自动探测到远程 Docker（WSL）: %s\033[0m\n",
+				time.Now().Format("2006-01-02 15:04:05"), remoteHost)
+		} else {
+			fmt.Printf("\033[33m%s [WARN] ⚠ 本地未检测到 Docker/Podman，尝试探测远程 Docker 失败，如需连接外部 Docker 请在 Settings > Export 中配置 Docker Host\033[0m\n",
+				time.Now().Format("2006-01-02 15:04:05"))
+		}
 	}
 
-	if dockerAvailable || podmanAvailable {
-		fmt.Printf("\033[36m%s [INFO] 运行时检测: Docker=%v, Podman=%v, 使用: %s\033[0m\n",
-			time.Now().Format("2006-01-02 15:04:05"), dockerAvailable, podmanAvailable, cfg.ContainerRuntime)
+	hostDisplay := cfg.DockerHost
+	if hostDisplay == "" {
+		if autoDetectedHost != "" {
+			hostDisplay = autoDetectedHost + " (auto)"
+		} else {
+			hostDisplay = "auto"
+		}
 	}
+	fmt.Printf("\033[36m%s [INFO] 运行时检测: Docker=%v, Podman=%v, 使用: %s, DockerHost=%s\033[0m\n",
+		time.Now().Format("2006-01-02 15:04:05"), dockerAvailable, podmanAvailable, cfg.ContainerRuntime, hostDisplay)
 	stepStart = logStep("检测容器运行时", stepStart)
 
 	// Step 6: Initialize default user
@@ -207,6 +223,7 @@ func main() {
 		api.GET("/config", h.GetConfig)
 		api.PUT("/config", h.UpdateConfig)
 		api.GET("/config/detect-runtime", h.DetectRuntime)
+		api.POST("/config/test-docker-host", h.TestDockerHost)
 		api.GET("/browse", h.BrowseDirectory)
 		api.POST("/webhook/test", h.TestWebhook)
 		api.POST("/tokens/test", h.TestTokenAuth)

@@ -24,7 +24,7 @@ export function renderDirectoryList(
           margin: '0 auto 12px',
           animation: 'spin 0.8s linear infinite',
         }} />
-        <div style={{ fontSize: '13px' }}>Loading directories...</div>
+        <div style={{ fontSize: '14px' }}>Loading directories...</div>
       </div>
     )
   }
@@ -36,7 +36,7 @@ export function renderDirectoryList(
         textAlign: 'center',
         color: '#ef4444',
       }}>
-        <div style={{ fontSize: '13px', marginBottom: '12px' }}>{error}</div>
+        <div style={{ fontSize: '14px', marginBottom: '12px' }}>{error}</div>
         <button
           onClick={() => loadDirectory(currentPath)}
 style={{
@@ -45,7 +45,7 @@ style={{
              border: '1px solid var(--border-color)',
              background: 'var(--bg-secondary)',
              color: 'var(--text-primary)',
-             fontSize: '12px',
+             fontSize: '13px',
              cursor: 'pointer',
            }}
         >
@@ -66,7 +66,7 @@ style={{
           marginBottom: '12px',
           opacity: 0.5,
         }} />
-        <div style={{ fontSize: '13px' }}>
+        <div style={{ fontSize: '14px' }}>
           No folders in this directory
         </div>
       </div>
@@ -108,7 +108,7 @@ style={{
               flexShrink: 0,
             }} />
             <span style={{
-              fontSize: '13px',
+              fontSize: '14px',
               color: 'var(--text-primary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -120,7 +120,7 @@ style={{
           <div style={{
             width: '150px',
             textAlign: 'left',
-            fontSize: '12px',
+            fontSize: '13px',
             color: 'var(--text-secondary)',
             flexShrink: 0,
             paddingRight: '12px',
@@ -131,7 +131,7 @@ style={{
           <div style={{
             width: '70px',
             textAlign: 'left',
-            fontSize: '12px',
+            fontSize: '13px',
             color: 'var(--text-muted)',
             flexShrink: 0,
             whiteSpace: 'nowrap',

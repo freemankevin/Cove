@@ -71,7 +71,7 @@ export default function Stats() {
               <div className="stat-info">
                 <p className="stat-title">{card.title}</p>
                 <p className="stat-value">{card.value}</p>
-                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '6px' }}>
                   {card.description}
                 </p>
               </div>
@@ -104,14 +104,14 @@ export default function Stats() {
               <TrendingUp size={16} style={{ color: 'var(--purple-400)' }} />
             </div>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
                 {t('stats.successRate')}
               </div>
-              <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
                 {t('stats.successRateDesc').replace('{count}', String(stats.total))}
               </div>
             </div>
-            <div style={{ marginLeft: 'auto', fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+            <div style={{ marginLeft: 'auto', fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
               {successRate}%
             </div>
           </div>
@@ -151,10 +151,10 @@ export default function Stats() {
                   background: item.color,
                   flexShrink: 0,
                 }} />
-                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>
                   {item.label}
                 </span>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                   {item.value}
                 </span>
               </div>

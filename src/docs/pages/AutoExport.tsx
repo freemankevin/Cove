@@ -8,7 +8,7 @@ export default function AutoExport() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '自动导出 - DockerPull 文档' : 'Auto Export - DockerPull Documentation'
+    document.title = language === 'zh' ? '自动导出 - Cove 文档' : 'Auto Export - Cove Documentation'
   }, [language])
 
   return (
@@ -119,7 +119,7 @@ Examples:
           title="Docker Compose"
           language="YAML"
           code={`services:
-  dockpull:
+  cove:
     volumes:
       - ./exports:/app/exports
       - /shared/images:/app/exports/shared  # Mount to shared location`}

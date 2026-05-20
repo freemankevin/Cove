@@ -17,7 +17,7 @@ body, * {
    Sidebar
 ═══════════════════════════════════════════════════════════ */
 .sidebar {
-  width: 232px;
+  width: 252px;
   background: var(--bg-primary);
   height: 100vh;
   overflow-y: auto;
@@ -44,19 +44,19 @@ body, * {
 }
 
 .logo span {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-title);
 }
 
 [data-lang="zh"] .logo span {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .logo span {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
@@ -72,22 +72,22 @@ body, * {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px;
-  margin: 1px 0;
+  padding: 8px 12px;
+  margin: 2px 0;
   color: var(--text-tertiary);
   text-decoration: none;
   transition: background 0.12s ease, color 0.12s ease;
   border-radius: var(--radius-card);
   font-weight: 400;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.4;
   letter-spacing: var(--letter-spacing-normal);
   cursor: pointer;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .nav-links li a {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 [data-lang="zh"] .nav-links li a.active span {
@@ -114,22 +114,22 @@ body, * {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px;
-  margin: 1px 0;
+  padding: 8px 12px;
+  margin: 2px 0;
   color: var(--text-tertiary);
   text-decoration: none;
   transition: background 0.12s ease, color 0.12s ease;
   border-radius: var(--radius-card);
   font-weight: 400;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.4;
   letter-spacing: var(--letter-spacing-normal);
   cursor: pointer;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .docs-link {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .docs-link:hover {
@@ -190,7 +190,7 @@ body, * {
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -218,29 +218,29 @@ body, * {
 }
 
 .user-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: -0.01em;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .user-name {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .user-role {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--text-tertiary);
   margin-top: 1px;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .user-role {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .logout-btn {
@@ -334,7 +334,7 @@ body, * {
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -361,39 +361,39 @@ body, * {
 }
 
 .user-menu-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .user-menu-name {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .user-menu-role {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-tertiary);
   margin-top: 2px;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .user-menu-role {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .user-menu-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   margin-top: 4px;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .user-menu-hint {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .user-menu-divider {
@@ -415,16 +415,16 @@ body, * {
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
   transition: background 0.12s ease, color 0.12s ease;
   text-align: left;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .user-menu-item {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .user-menu-item:hover {
@@ -488,7 +488,7 @@ body, * {
 }
 
 .top-bar-date {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: #6a9f80;
   padding: 4px 12px;
@@ -522,7 +522,7 @@ body, * {
  ═══════════════════════════════════════════════════════════ */
 .card-body {
   flex: 1;
-  padding: 50px 24px 80px 24px;
+  padding: 50px 32px 80px 32px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -530,7 +530,7 @@ body, * {
 
 .content-center {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -546,19 +546,19 @@ body, * {
 }
 
 .page-header h1 {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-title);
 }
 
 [data-lang="zh"] .page-header h1 {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .page-header h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
@@ -614,7 +614,7 @@ body, * {
   height: 14px;
   background: var(--purple-500);
   color: #fff;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   border-radius: var(--radius-sm);
   display: flex;
@@ -669,15 +669,15 @@ body, * {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .notif-panel-title {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .notif-zap-icon {
@@ -694,7 +694,7 @@ body, * {
   padding: 0 4px;
   background: var(--accent-bg);
   color: var(--purple-400);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   border-radius: var(--radius-card);
   letter-spacing: 0;
@@ -707,7 +707,7 @@ body, * {
   background: transparent;
   border: 1px solid var(--border-color);
   color: var(--text-tertiary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   padding: 3px 7px;
@@ -776,7 +776,7 @@ body, * {
 }
 
 .notif-empty-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 3px;
@@ -784,7 +784,7 @@ body, * {
 }
 
 .notif-empty-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -835,7 +835,7 @@ body, * {
 }
 
 .notif-item-type-label {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: -0.01em;
@@ -844,7 +844,7 @@ body, * {
 }
 
 .notif-item-time {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--text-muted);
   font-weight: 400;
   white-space: nowrap;
@@ -853,7 +853,7 @@ body, * {
 }
 
 .notif-item-message {
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text-secondary);
   line-height: 1.55;
   word-break: break-word;
@@ -897,7 +897,7 @@ body, * {
 }
 
 .notif-footer-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -911,11 +911,11 @@ body, * {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 7px 13px;
+  padding: 8px 14px;
   border: 1px solid transparent;
   border-radius: var(--radius-card);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
   line-height: 1.5;
@@ -924,8 +924,8 @@ body, * {
 }
 
 .btn-sm {
-  padding: 5px 9px;
-  font-size: 12px;
+  padding: 6px 10px;
+  font-size: 13px;
   border-radius: var(--radius-sm);
   gap: 4px;
   letter-spacing: -0.004em;
@@ -933,7 +933,7 @@ body, * {
 
 .btn-xs {
   padding: 3px 7px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   border-radius: var(--radius-xs);
   letter-spacing: -0.003em;
 }
@@ -1047,15 +1047,15 @@ body, * {
 }
 
 .card-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-subtitle);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .card-title {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1076,9 +1076,9 @@ body, * {
 }
 
 .table th {
-  padding: 12px 16px;
+  padding: 14px 18px;
   text-align: left;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-tertiary);
   background: var(--bg-tertiary);
@@ -1093,8 +1093,8 @@ body, * {
 .table th:last-child  { border-radius: 0 var(--radius-card) 0 0; }
 
 .table td {
-  padding: 16px 16px;
-  font-size: 13px;
+  padding: 18px 18px;
+  font-size: 14px;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   vertical-align: middle;
@@ -1135,7 +1135,7 @@ body, * {
   align-items: center;
   justify-content: center;
   gap: 20px;
-  width: 1120px;
+  width: 1200px;
   height: 444px;
 }
 
@@ -1195,20 +1195,20 @@ body, * {
 }
 
 .empty-state-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 5px;
   letter-spacing: -0.01em;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .empty-state-title {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .empty-state-description {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 12px;
@@ -1222,7 +1222,7 @@ body, * {
 }
 
 .empty-state-tag {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   background: var(--bg-tertiary);
   border: 0.5px solid var(--border-color);
@@ -1243,7 +1243,7 @@ body, * {
   gap: 5px;
   padding: 3px 8px;
   border-radius: var(--radius-card);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
   letter-spacing: -0.01em;
@@ -1302,21 +1302,21 @@ body, * {
    Forms – Railway style
 ═══════════════════════════════════════════════════════════ */
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-weight: 500;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: -0.005em;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .form-group label {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .form-control {
@@ -1324,7 +1324,7 @@ body, * {
   padding: 11px 14px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-card);
-  font-size: 14px;
+  font-size: 15px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   background: var(--bg-secondary);
   color: var(--text-primary);
@@ -1403,7 +1403,7 @@ textarea.form-control {
   resize: vertical;
   min-height: 96px;
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.7;
 }
 
@@ -1439,7 +1439,7 @@ select.form-control {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-primary);
   font-weight: 400;
   user-select: none;
@@ -1516,7 +1516,7 @@ select.form-control {
 }
 
 .toggle-switch-label {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--text-primary);
   line-height: 1.5;
@@ -1564,7 +1564,7 @@ select.form-control {
 }
 
 .toggle-status {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-secondary);
   line-height: 1.5;
 }
@@ -1589,7 +1589,7 @@ select.form-control {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-card);
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
@@ -1610,19 +1610,19 @@ select.form-control {
 }
 
 .modal-header h2 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-title);
 }
 
 [data-lang="zh"] .modal-header h2 {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .modal-header h2 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
@@ -1651,7 +1651,7 @@ select.form-control {
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1;
   transition: background 0.1s, color 0.1s;
 }
@@ -1665,18 +1665,18 @@ select.form-control {
    Settings Sections
 ═══════════════════════════════════════════════════════════ */
 .section-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
   margin: 0 0 20px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-color);
   letter-spacing: var(--letter-spacing-subtitle);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .section-title {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .settings-section {
@@ -1715,7 +1715,7 @@ select.form-control {
 .stat-card {
   background: var(--bg-tertiary);
   border-radius: var(--radius-card);
-  padding: 18px 20px;
+  padding: 20px 24px;
   border: 1px solid var(--border-color);
   transition: border-color 0.15s ease, background 0.15s ease;
   position: relative;
@@ -1758,7 +1758,7 @@ select.form-control {
 
 .stat-title {
   color: var(--text-tertiary);
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1766,7 +1766,7 @@ select.form-control {
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-title);
@@ -1774,12 +1774,12 @@ select.form-control {
 }
 
 [data-lang="zh"] .stat-value {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .stat-value {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
@@ -1832,7 +1832,7 @@ select.form-control {
   cursor: pointer;
   transition: border-color 0.12s ease, background 0.12s ease;
   background: var(--bg-tertiary);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -1905,7 +1905,7 @@ select.form-control {
 
 .platform-option-label {
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -1927,16 +1927,16 @@ select.form-control {
 }
 
 .content-box-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
   margin: 0 0 18px;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .content-box-title {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1954,12 +1954,12 @@ select.form-control {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 /* Left Sidebar */
 .settings-sidebar {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   background: var(--bg-primary);
   padding: 40px 24px 40px 0;
@@ -1970,7 +1970,7 @@ select.form-control {
 }
 
 .settings-sidebar-title {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-display);
@@ -1978,12 +1978,12 @@ select.form-control {
 }
 
 [data-lang="zh"] .settings-sidebar-title {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .settings-sidebar-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
@@ -2008,18 +2008,18 @@ select.form-control {
   border: none;
   background: transparent;
   color: var(--text-tertiary);
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 400;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   text-align: left;
   width: 100%;
   letter-spacing: -0.005em;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .settings-nav-item {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 [data-lang="zh"] .settings-nav-item.active {
@@ -2059,7 +2059,7 @@ select.form-control {
 
 /* Right Content */
 .settings-content {
-  width: 880px;
+  width: 960px;
   flex-shrink: 0;
   padding: 40px 0 80px;
   background: var(--bg-primary);
@@ -2074,7 +2074,7 @@ select.form-control {
 }
 
 .settings-page-title {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 500;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-display);
@@ -2082,17 +2082,17 @@ select.form-control {
 }
 
 [data-lang="zh"] .settings-page-title {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .settings-page-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
 .settings-page-subtitle {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
@@ -2118,8 +2118,8 @@ select.form-control {
 /* ═══════════════════════════════════════════════════════════
     Utility Classes
   ═══════════════════════════════════════════════════════════ */
-.text-sm    { font-size: 12.5px; }
-.text-xs    { font-size: 11.5px; }
+.text-sm    { font-size: 13.5px; }
+.text-xs    { font-size: 12.5px; }
 .text-mono  { font-family: var(--font-mono); }
 
 .text-primary   { color: var(--text-primary); }
@@ -2158,7 +2158,7 @@ select.form-control {
 }
 
 .docs-sidebar {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   position: sticky;
   top: 0;
@@ -2173,20 +2173,20 @@ select.form-control {
   gap: 8px;
   padding: 10px 12px;
   margin-bottom: 20px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .docs-sidebar-header {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .docs-sidebar-header {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
@@ -2206,7 +2206,7 @@ select.form-control {
 }
 
 .docs-nav-title {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-tertiary);
   letter-spacing: 0.04em;
@@ -2223,7 +2223,7 @@ select.form-control {
   border: none;
   background: transparent;
   color: var(--text-tertiary);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
   border-radius: var(--radius-sm);
@@ -2276,7 +2276,7 @@ select.form-control {
 }
 
 .docs-content h1 {
-  font-size: 34px;
+  font-size: 36px;
   font-weight: 500;
   color: var(--text-primary);
   margin: 0 0 16px;
@@ -2285,17 +2285,17 @@ select.form-control {
 }
 
 [data-lang="zh"] .docs-content h1 {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .docs-content h1 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
 .docs-content h2 {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 500;
   color: var(--text-primary);
   margin: 32px 0 16px;
@@ -2304,17 +2304,17 @@ select.form-control {
 }
 
 [data-lang="zh"] .docs-content h2 {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .docs-content h2 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
 .docs-content h3 {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 500;
   color: var(--text-primary);
   margin: 24px 0 12px;
@@ -2322,24 +2322,24 @@ select.form-control {
 }
 
 [data-lang="zh"] .docs-content h3 {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
   letter-spacing: 0.05em;
 }
 
 [data-lang="en"] .docs-content h3 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
 .docs-lead {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text-secondary);
   line-height: 1.7;
   margin: 0 0 24px;
 }
 
 .docs-content p {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-secondary);
   line-height: 1.7;
   margin: 0 0 16px;
@@ -2360,19 +2360,19 @@ select.form-control {
 
 .docs-feature h3 {
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
 }
 
 [data-lang="zh"] .docs-feature h3 {
-  font-family: var(--font-serif-zh);
+  font-family: var(--font-sans-zh);
 }
 
 .docs-feature p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-tertiary);
   line-height: 1.6;
 }
@@ -2387,7 +2387,7 @@ select.form-control {
 
 .docs-code code {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-primary);
   line-height: 1.7;
   white-space: pre;
@@ -2405,7 +2405,7 @@ select.form-control {
 }
 
 .docs-list li {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-secondary);
   line-height: 1.7;
   margin: 8px 0;
@@ -2417,7 +2417,7 @@ select.form-control {
 
 .docs-content code {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   background: var(--bg-tertiary);
   padding: 2px 6px;
   border-radius: var(--radius-xs);
@@ -2428,7 +2428,7 @@ select.form-control {
   width: 100%;
   border-collapse: collapse;
   margin: 16px 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .docs-table th {
@@ -2437,7 +2437,7 @@ select.form-control {
   font-weight: 600;
   color: var(--text-tertiary);
   background: var(--bg-tertiary);
-  font-size: 11.5px;
+  font-size: 12.5px;
   letter-spacing: 0.03em;
 }
 
@@ -2467,7 +2467,7 @@ select.form-control {
 
 .docs-note p,
 .docs-note span {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -2478,7 +2478,7 @@ select.form-control {
   gap: 4px;
   padding: 2px 8px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 

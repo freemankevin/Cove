@@ -28,7 +28,7 @@ If applicable, add screenshots to help explain your problem.
 - OS: [e.g., Windows 11, macOS 14, Ubuntu 22.04]
 - Browser: [e.g., Chrome 120, Firefox 121]
 - Docker Version: [e.g., 24.0.7]
-- DockPull Version: [e.g., v1.0.0]
+- Cove Version: [e.g., v1.0.0]
 
 ## Logs
 Please paste relevant log information if available.

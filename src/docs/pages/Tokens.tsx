@@ -7,7 +7,7 @@ export default function Tokens() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '访问令牌 - DockerPull 文档' : 'Access Tokens - DockerPull Documentation'
+    document.title = language === 'zh' ? '访问令牌 - Cove 文档' : 'Access Tokens - Cove Documentation'
   }, [language])
 
   return (

@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '设置 - DockerPull 文档' : 'Settings - DockerPull Documentation'
+    document.title = language === 'zh' ? '设置 - Cove 文档' : 'Settings - Cove Documentation'
   }, [language])
 
   return (
@@ -81,7 +81,7 @@ export default function SettingsPage() {
   - /mnt/shared/images:/app/exports
   
   # Named volume
-  - dockpull-exports:/app/exports`}
+  - cove-exports:/app/exports`}
         />
 
         <h2>{t('docs.settings.platform.title')}</h2>

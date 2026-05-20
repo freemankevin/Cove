@@ -1,16 +1,31 @@
 package handler
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/gin-gonic/gin"
 )
+
+// newHTTPClient 创建支持环境变量代理的 HTTP 客户端
+func newHTTPClient(timeout time.Duration) *http.Client {
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+	}
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
+}
 
 type TestTokenRequest struct {
 	Registry string `json:"registry" binding:"required"`
@@ -125,7 +140,7 @@ func (h *Handler) testGhcrAuth(req TestTokenRequest) gin.H {
 }
 
 func (h *Handler) verifyGitHubToken(token string) (string, []string, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := newHTTPClient(30 * time.Second)
 
 	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
 	if err != nil {
@@ -170,7 +185,7 @@ func (h *Handler) verifyGitHubToken(token string) (string, []string, error) {
 }
 
 func (h *Handler) verifyGhcrAccess(username, token string) bool {
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := newHTTPClient(30 * time.Second)
 
 	reqUrl := "https://ghcr.io/token?service=ghcr.io&scope=repository:github/safe-settings:pull"
 	req, err := http.NewRequest("GET", reqUrl, nil)
@@ -226,68 +241,106 @@ func (h *Handler) testDockerHubAuth(req TestTokenRequest) gin.H {
 		return result
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	// 1. Try Docker registry token auth via HTTP (preferred when network is clean)
+	client := newHTTPClient(30 * time.Second)
+	auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
 
-	reqUrl := "https://hub.docker.com/v2/users/login/"
-	body := strings.NewReader(fmt.Sprintf(`{"username":"%s","password":"%s"}`, username, password))
-
-	httpReq, err := http.NewRequest("POST", reqUrl, body)
+	tokenReq, err := http.NewRequest("GET", "https://auth.docker.io/token?service=registry.docker.io&scope=registry:catalog:*", nil)
 	if err != nil {
 		result["message"] = fmt.Sprintf("Failed to create request: %v", err)
 		return result
 	}
-	httpReq.Header.Set("Content-Type", "application/json")
+	tokenReq.Header.Set("Authorization", "Basic "+auth)
 
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		result["message"] = fmt.Sprintf("Failed to connect to Docker Hub: %v", err)
-		return result
-	}
-	defer resp.Body.Close()
+	resp, err := client.Do(tokenReq)
+	if err == nil {
+		defer resp.Body.Close()
 
-	if resp.StatusCode == 401 {
-		result["message"] = "Invalid username or password"
-		return result
-	}
+		if resp.StatusCode == 401 {
+			result["message"] = "Invalid username or password"
+			return result
+		}
 
-	if resp.StatusCode != 200 {
-		respBody, _ := io.ReadAll(resp.Body)
-		result["message"] = fmt.Sprintf("Docker Hub returned status %d: %s", resp.StatusCode, string(respBody))
-		return result
-	}
+		if resp.StatusCode == 200 {
+			body, _ := io.ReadAll(resp.Body)
+			var tokenResp struct {
+				Token string `json:"token"`
+			}
+			if err := json.Unmarshal(body, &tokenResp); err == nil && tokenResp.Token != "" {
+				result["success"] = true
+				result["message"] = fmt.Sprintf("Authenticated as %s", username)
+				return result
+			}
+		}
 
-	var loginResp struct {
-		Token string `json:"token"`
-	}
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		result["message"] = fmt.Sprintf("Failed to read response: %v", err)
-		return result
-	}
-
-	if err := json.Unmarshal(respBody, &loginResp); err != nil {
-		result["message"] = fmt.Sprintf("Failed to parse response: %v", err)
+		// HTTP connected but returned unexpected status, read body for diagnostics
+		body, _ := io.ReadAll(resp.Body)
+		result["message"] = fmt.Sprintf("Docker Hub token endpoint returned HTTP %d (body: %s)", resp.StatusCode, strings.TrimSpace(string(body)))
 		return result
 	}
 
-	if loginResp.Token == "" {
-		result["message"] = "Login successful but no token returned"
+	// 2. Fallback: use Docker SDK via configured DockerHost (remote daemon)
+	httpErr := err
+
+	if h.cfg.DockerHost != "" {
+		cli, cliErr := h.dockerService.GetClient()
+		if cliErr == nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			authConfig := types.AuthConfig{
+				Username:      username,
+				Password:      password,
+				ServerAddress: "https://index.docker.io/v1/",
+			}
+			_, loginErr := cli.RegistryLogin(ctx, authConfig)
+			cancel()
+			if loginErr == nil {
+				result["success"] = true
+				result["message"] = fmt.Sprintf("Authenticated as %s (via remote Docker daemon at %s)", username, h.cfg.DockerHost)
+				return result
+			}
+			result["message"] = fmt.Sprintf("Failed to connect to Docker Hub: %v (remote docker login failed: %v)", httpErr, loginErr)
+			return result
+		}
+		// Client creation failed, fall through to local CLI
+	}
+
+	// 3. Fallback: use local docker login CLI
+	if _, lookErr := exec.LookPath("docker"); lookErr != nil {
+		result["message"] = fmt.Sprintf("Failed to connect to Docker Hub: %v (docker command not found in PATH)", httpErr)
+		result["error_type"] = "docker_unavailable"
+		result["docker_host_configured"] = h.cfg.DockerHost != ""
 		return result
 	}
 
-	registryVerified := h.verifyDockerRegistryV2Auth("https://index.docker.io/v2/", username, password)
-	if !registryVerified {
-		result["message"] = "Docker Hub login successful, but registry authentication failed"
+	tmpDir, tmpErr := os.MkdirTemp("", "dockpull-auth-test-*")
+	if tmpErr == nil {
+		defer os.RemoveAll(tmpDir)
+	}
+	cmd := exec.Command("docker", "login", "-u", username, "--password-stdin")
+	if tmpDir != "" {
+		cmd.Env = append(os.Environ(), "DOCKER_CONFIG="+tmpDir)
+	}
+	cmd.Stdin = strings.NewReader(password)
+	output, cmdErr := cmd.CombinedOutput()
+	if cmdErr == nil {
+		result["success"] = true
+		result["message"] = fmt.Sprintf("Authenticated as %s (via docker CLI)", username)
 		return result
 	}
 
-	result["success"] = true
-	result["message"] = fmt.Sprintf("Authenticated as %s", username)
+	// Both methods failed
+	if httpErr != nil {
+		result["message"] = fmt.Sprintf("Failed to connect to Docker Hub: %v (docker login failed: %v, output: %s)", httpErr, cmdErr, strings.TrimSpace(string(output)))
+	} else {
+		result["message"] = fmt.Sprintf("Docker Hub auth failed (docker login error: %v, output: %s)", cmdErr, strings.TrimSpace(string(output)))
+	}
+	result["error_type"] = "docker_unavailable"
+	result["docker_host_configured"] = h.cfg.DockerHost != ""
 	return result
 }
 
 func (h *Handler) verifyDockerRegistryV2Auth(baseUrl, username, password string) bool {
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := newHTTPClient(30 * time.Second)
 
 	req, err := http.NewRequest("GET", baseUrl, nil)
 	if err != nil {
@@ -326,7 +379,7 @@ func (h *Handler) testQuayAuth(req TestTokenRequest) gin.H {
 		return result
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := newHTTPClient(30 * time.Second)
 
 	reqUrl := "https://quay.io/v2/auth?service=quay.io"
 	httpReq, err := http.NewRequest("GET", reqUrl, nil)
@@ -435,7 +488,7 @@ func (h *Handler) testEcrAuth(req TestTokenRequest) gin.H {
 		return result
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := newHTTPClient(30 * time.Second)
 
 	reqUrl := fmt.Sprintf("https://%s/v2/", req.Registry)
 	httpReq, err := http.NewRequest("GET", reqUrl, nil)
@@ -483,7 +536,7 @@ func (h *Handler) testGarAuth(req TestTokenRequest) gin.H {
 		return result
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := newHTTPClient(30 * time.Second)
 
 	reqUrl := fmt.Sprintf("https://%s/v2/", req.Registry)
 	httpReq, err := http.NewRequest("GET", reqUrl, nil)

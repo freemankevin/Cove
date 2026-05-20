@@ -97,7 +97,7 @@ export default function ConfirmDialog({
               <AlertTriangle size={20} />
             </div>
             <div style={{
-              fontSize: '16px',
+              fontSize: '17px',
               fontWeight: 600,
               color: 'var(--text-primary)',
             }}>
@@ -131,7 +131,7 @@ export default function ConfirmDialog({
         <div style={{
           padding: '20px',
           color: 'var(--text-secondary)',
-          fontSize: '14px',
+          fontSize: '15px',
           lineHeight: '1.6',
         }}>
           {message}
@@ -150,7 +150,7 @@ export default function ConfirmDialog({
             onClick={onCancel}
             style={{
               padding: '8px 20px',
-              fontSize: '13px',
+              fontSize: '14px',
               whiteSpace: 'nowrap',
               flexShrink: 0,
               width: 'auto',
@@ -165,7 +165,7 @@ export default function ConfirmDialog({
               onClick={onMiddle}
               style={{
                 padding: '8px 20px',
-                fontSize: '13px',
+                fontSize: '14px',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
                 width: 'auto',
@@ -180,7 +180,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             style={{
               padding: '8px 20px',
-              fontSize: '13px',
+              fontSize: '14px',
               whiteSpace: 'nowrap',
               flexShrink: 0,
               width: 'auto',

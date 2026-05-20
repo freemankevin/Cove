@@ -54,6 +54,7 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
       { key: 'dockerhub_token', placeholder: 'Access token', type: 'password' },
     ],
     checkKeys: ['dockerhub_username', 'dockerhub_token'],
+    requireTest: true,
   },
   ghcr: {
     id: 'ghcr',
@@ -75,6 +76,7 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
       { key: 'quay_password', placeholder: 'Red Hat Password', type: 'password' },
     ],
     checkKeys: ['quay_username', 'quay_password'],
+    requireTest: true,
   },
   acr: {
     id: 'acr',
@@ -85,6 +87,7 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
       { key: 'acr_password', placeholder: 'Password', type: 'password' },
     ],
     checkKeys: ['acr_username', 'acr_password'],
+    requireTest: true,
   },
   ecr: {
     id: 'ecr',
@@ -96,6 +99,7 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
       { key: 'ecr_region', placeholder: 'Region (e.g., us-east-1)', type: 'text' },
     ],
     checkKeys: ['ecr_access_key_id', 'ecr_secret_access_key'],
+    requireTest: true,
   },
   gar: {
     id: 'gar',
@@ -105,6 +109,7 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
       { key: 'gar_token', placeholder: 'Google Cloud token or JSON key', type: 'password' },
     ],
     checkKeys: ['gar_token'],
+    requireTest: true,
   },
   harbor: {
     id: 'harbor',
@@ -117,6 +122,7 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
     ],
     checkKeys: ['harbor_url', 'harbor_username', 'harbor_password'],
     hasCert: true,
+    requireTest: true,
   },
   tencentcloud: {
     id: 'tencentcloud',
@@ -127,6 +133,7 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
       { key: 'tencentcloud_password', placeholder: 'Password', type: 'password' },
     ],
     checkKeys: ['tencentcloud_username', 'tencentcloud_password'],
+    requireTest: true,
   },
   huaweicloud: {
     id: 'huaweicloud',
@@ -137,5 +144,6 @@ export const TOKEN_REGISTRY_CONFIG: Record<TokenRegistryId, TokenRegistryConfig>
       { key: 'huaweicloud_password', placeholder: 'Password', type: 'password' },
     ],
     checkKeys: ['huaweicloud_username', 'huaweicloud_password'],
+    requireTest: true,
   },
 }

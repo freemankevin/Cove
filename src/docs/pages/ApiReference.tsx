@@ -8,7 +8,7 @@ export default function ApiReference() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? 'API 参考 - DockerPull 文档' : 'API Reference - DockerPull Documentation'
+    document.title = language === 'zh' ? 'API 参考 - Cove 文档' : 'API Reference - Cove Documentation'
   }, [language])
 
   return (

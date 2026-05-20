@@ -1,10 +1,11 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 
-	"docker-pull-manager/internal/models"
+	"cove/internal/models"
 )
 
 // getProjectRoot returns the working directory as project root
@@ -47,20 +48,23 @@ type Config struct {
 	EcrSecretAccessKey   string `json:"ecr_secret_access_key"`
 	EcrRegion            string `json:"ecr_region"`
 	EcrVerified          bool   `json:"ecr_verified"`
-	GarToken             string `json:"gar_token"`
-	GarVerified          bool   `json:"gar_verified"`
-	HarborUrl            string `json:"harbor_url"`
-	HarborUsername       string `json:"harbor_username"`
-	HarborPassword       string `json:"harbor_password"`
-	HarborTlsCert        string `json:"harbor_tls_cert"`
-	HarborVerified       bool   `json:"harbor_verified"`
-	TencentcloudUsername string `json:"tencentcloud_username"`
+	GarToken             string                `json:"gar_token"`
+	GarVerified          bool                  `json:"gar_verified"`
+	HarborUrl            string                `json:"harbor_url"`
+	HarborUsername       string                `json:"harbor_username"`
+	HarborPassword       string                `json:"harbor_password"`
+	HarborTlsCert        string                `json:"harbor_tls_cert"`
+	HarborVerified       bool                  `json:"harbor_verified"`
+	HarborConfigs        []models.HarborConfig `json:"harbor_configs"`
+	TencentcloudUsername string                `json:"tencentcloud_username"`
 	TencentcloudPassword string `json:"tencentcloud_password"`
 	TencentcloudVerified bool   `json:"tencentcloud_verified"`
 	HuaweicloudUsername  string `json:"huaweicloud_username"`
 	HuaweicloudPassword  string `json:"huaweicloud_password"`
 	HuaweicloudVerified  bool   `json:"huaweicloud_verified"`
 	ContainerRuntime     string `json:"container_runtime"`
+	DockerHost           string `json:"docker_host"`
+	DockerHostTimeout    int    `json:"docker_host_timeout"`
 }
 
 // DatabaseFilePath returns the path to the SQLite database file
@@ -80,7 +84,7 @@ func Load() *Config {
 
 // FromSettings creates a Config from database settings
 func FromSettings(s *models.Settings) *Config {
-	return &Config{
+	cfg := &Config{
 		DatabasePath:         DatabaseFilePath(),
 		ExportPath:           s.ExportPath,
 		RetryMaxAttempts:     s.RetryMaxAttempts,
@@ -121,7 +125,13 @@ func FromSettings(s *models.Settings) *Config {
 		HuaweicloudPassword:  s.HuaweicloudPassword,
 		HuaweicloudVerified:  s.HuaweicloudVerified,
 		ContainerRuntime:     s.ContainerRuntime,
+		DockerHost:           s.DockerHost,
+		DockerHostTimeout:    s.DockerHostTimeout,
 	}
+	if s.HarborConfigsJSON != "" {
+		_ = json.Unmarshal([]byte(s.HarborConfigsJSON), &cfg.HarborConfigs)
+	}
+	return cfg
 }
 
 // GetDataDir returns the data directory path

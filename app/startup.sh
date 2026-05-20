@@ -60,8 +60,11 @@ if [ ! -f "$BINARY_PATH" ]; then
     echo "   ℹ️  二进制文件不存在，需要编译"
     NEED_BUILD=1
 else
-    # Check if source files are newer than binary
-    if find app -name "*.go" -newer "$BINARY_PATH" | grep -q .; then
+    # Check if source files are newer than binary (cross-platform stat comparison)
+    BINARY_MTIME=$(stat -c %Y "$BINARY_PATH" 2>/dev/null || stat -f %m "$BINARY_PATH" 2>/dev/null || echo "0")
+    LATEST_GO_MTIME=$(find app -name "*.go" -type f -exec stat -c %Y {} + 2>/dev/null | sort -rn | head -1)
+
+    if [ -n "$LATEST_GO_MTIME" ] && [ "$LATEST_GO_MTIME" -gt "$BINARY_MTIME" ]; then
         echo "   ℹ️  源码已更新，需要重新编译"
         NEED_BUILD=1
     else

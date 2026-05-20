@@ -11,11 +11,11 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
-const STORAGE_KEY = 'dockpull-language'
+const STORAGE_KEY = 'cove-language'
 
 const translations: Record<Language, Record<string, string>> = {
   en: {
-    'login.brandTitle': 'DockerPull',
+    'login.brandTitle': 'Cove',
     'login.brandDesc': 'A lightweight Docker image management system for pulling and organizing container images with ease',
     'login.title': 'Welcome Back',
     'login.subtitle': 'Sign in to your account to continue',
@@ -106,6 +106,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.export.runtimeDetectFailed': 'Failed to detect runtime',
     'settings.export.runtimeRefresh': 'Refresh detection',
     'settings.export.runtimeNoneAvailable': 'No container runtime detected. Please install Docker or Podman.',
+    'settings.export.dockerHost': 'Docker Host',
+    'settings.export.dockerHostHint': 'Override Docker daemon address (e.g., tcp://localhost:2375, npipe:////./pipe/docker_engine). Leave empty for auto-detection.',
+    'settings.export.dockerHostTest': 'Test',
+    'settings.export.dockerHostReachable': 'Docker host is reachable',
+    'settings.export.dockerHostUnreachable': 'Docker host unreachable',
+    'settings.export.dockerHostTimeout': 'Timeout',
+    'settings.export.dockerHostTimeoutHint': 'Seconds to wait for docker daemon response (default 180).',
     'settings.webhook.enable': 'Enable Webhooks',
     'settings.webhook.enableHint': 'Send a POST request when pulls finish.',
     'settings.webhook.enabled': 'Enabled',
@@ -127,6 +134,11 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.tokens.mustVerify': 'Test required before saving',
     'settings.tokens.mustVerifyFirst': 'Please verify token before saving',
     'settings.tokens.requiresVerification': 'Requires verification',
+    'settings.tokens.addHarborInstance': 'Add Harbor Instance',
+    'settings.tokens.dockerUnavailableHint': 'Cannot verify Docker Hub credentials',
+    'settings.tokens.checkLocalDocker': 'Check if Docker Desktop or Podman is running locally',
+    'settings.tokens.configureDockerHost': 'Or configure a remote Docker host in Export Settings',
+    'settings.tokens.goToExportSettings': 'Go to Export Settings',
 
     'token.dockerhub.name': 'Docker Hub',
     'token.dockerhub.hint': 'Username and access token for Docker Hub (hub.docker.com). Create token at Account Settings > Security.',
@@ -274,7 +286,7 @@ const translations: Record<Language, Record<string, string>> = {
     'localImages.loading': 'Loading local images...',
     'localImages.loadFailed': 'Failed to load local images',
     'localImages.table.image': 'Image',
-    'localImages.table.arch': 'Arch',
+    'localImages.table.platform': 'Platform',
     'localImages.table.size': 'Size',
     'localImages.table.created': 'Created',
     'localImages.table.actions': 'Actions',
@@ -287,6 +299,7 @@ const translations: Record<Language, Record<string, string>> = {
     'localImages.deleteConfirm': 'Are you sure you want to delete {image}? This cannot be undone.',
     'localImages.empty.title': 'No local images found',
     'localImages.empty.desc': 'Pull images first to manage them locally',
+    'localImages.empty.action': 'Go to Images',
     'localImages.busy.title': 'Container Runtime Busy',
     'localImages.busy.autoRetry': 'Auto-refreshing every 30 seconds...',
     'localImages.busy.retryNow': 'Retry Now',
@@ -311,7 +324,7 @@ const translations: Record<Language, Record<string, string>> = {
     ...docTranslations.en,
   },
   zh: {
-    'login.brandTitle': 'DockerPull',
+    'login.brandTitle': 'Cove',
     'login.brandDesc': 'Docker 镜像拉取与导出管理工具',
     'login.title': '欢迎回来',
     'login.subtitle': '登录您的账户以继续',
@@ -402,6 +415,13 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.export.runtimeDetectFailed': '运行时检测失败',
     'settings.export.runtimeRefresh': '刷新检测',
     'settings.export.runtimeNoneAvailable': '未检测到容器运行时，请安装 Docker 或 Podman。',
+    'settings.export.dockerHost': 'Docker 主机地址',
+    'settings.export.dockerHostHint': '覆盖 Docker 守护进程地址（如 tcp://localhost:2375, npipe:////./pipe/docker_engine）。留空使用自动检测。',
+    'settings.export.dockerHostTest': '测试',
+    'settings.export.dockerHostReachable': 'Docker 主机可连接',
+    'settings.export.dockerHostUnreachable': 'Docker 主机无法连接',
+    'settings.export.dockerHostTimeout': '超时',
+    'settings.export.dockerHostTimeoutHint': '等待 Docker 守护进程响应的秒数（默认 180）。',
     'settings.webhook.enable': '启用 Webhooks',
     'settings.webhook.enableHint': '拉取完成时发送 POST 请求。',
     'settings.webhook.enabled': '已启用',
@@ -423,6 +443,11 @@ const translations: Record<Language, Record<string, string>> = {
     'settings.tokens.mustVerify': '保存前需先测试验证',
     'settings.tokens.mustVerifyFirst': '请先验证令牌后再保存',
     'settings.tokens.requiresVerification': '需要验证',
+    'settings.tokens.addHarborInstance': '添加 Harbor 实例',
+    'settings.tokens.dockerUnavailableHint': '无法验证 Docker Hub 凭证',
+    'settings.tokens.checkLocalDocker': '检查本地是否已启动 Docker Desktop 或 Podman',
+    'settings.tokens.configureDockerHost': '或者在导出设置中配置远程 Docker 主机',
+    'settings.tokens.goToExportSettings': '前往导出设置',
 
     'token.dockerhub.name': 'Docker Hub',
     'token.dockerhub.hint': 'Docker Hub 的用户名和访问令牌。在账户设置 > 安全中创建令牌。',
@@ -570,7 +595,7 @@ const translations: Record<Language, Record<string, string>> = {
     'localImages.loading': '加载本地镜像中...',
     'localImages.loadFailed': '加载本地镜像失败',
     'localImages.table.image': '镜像',
-    'localImages.table.arch': '架构',
+    'localImages.table.platform': '平台',
     'localImages.table.size': '大小',
     'localImages.table.created': '创建时间',
     'localImages.table.actions': '操作',
@@ -583,6 +608,7 @@ const translations: Record<Language, Record<string, string>> = {
     'localImages.deleteConfirm': '确定要删除 {image} 吗？此操作无法撤销。',
     'localImages.empty.title': '未找到本地镜像',
     'localImages.empty.desc': '请先拉取镜像再进行本地管理',
+    'localImages.empty.action': '前往镜像列表',
     'localImages.busy.title': '容器运行时繁忙',
     'localImages.busy.autoRetry': '每30秒自动刷新...',
     'localImages.busy.retryNow': '立即重试',

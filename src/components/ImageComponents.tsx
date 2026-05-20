@@ -219,7 +219,7 @@ export function PlatformOption({
   const baseStyle = {
     display: 'flex', alignItems: 'center', gap: '6px',
     padding: '4px 10px', borderRadius: 'var(--radius-xs)', cursor: 'pointer',
-    fontSize: '12.5px', fontWeight: 500,
+    fontSize: '13.5px', fontWeight: 500,
     transition: 'all 0.12s',
   }
   

@@ -7,7 +7,7 @@ export default function Introduction() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '介绍 - DockerPull 文档' : 'Introduction - DockerPull Documentation'
+    document.title = language === 'zh' ? '介绍 - Cove 文档' : 'Introduction - Cove Documentation'
   }, [language])
 
   return (
@@ -82,8 +82,8 @@ export default function Introduction() {
                 <div className="doc-arch-icon doc-arch-icon-main">
                   <Download size={26} />
                 </div>
-                <div className="doc-arch-label">{t('docs.intro.archDockerPull')}</div>
-                <div className="doc-arch-sublabel">{t('docs.intro.archDockerPullSub')}</div>
+                <div className="doc-arch-label">{t('docs.intro.archCove')}</div>
+                <div className="doc-arch-sublabel">{t('docs.intro.archCoveSub')}</div>
               </div>
 
               <div className="doc-arch-arrow">

@@ -11,7 +11,7 @@ const longTimeoutApi = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('dockpull_token')
+  const token = localStorage.getItem('cove_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -19,7 +19,7 @@ api.interceptors.request.use((config) => {
 })
 
 longTimeoutApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('dockpull_token')
+  const token = localStorage.getItem('cove_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -30,9 +30,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('dockpull_token')
-      localStorage.removeItem('dockpull_user')
-      localStorage.removeItem('dockpull_config')
+      localStorage.removeItem('cove_token')
+      localStorage.removeItem('cove_user')
+      localStorage.removeItem('cove_config')
       window.location.href = '/login'
     }
     return Promise.reject(error)
@@ -43,9 +43,9 @@ longTimeoutApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('dockpull_token')
-      localStorage.removeItem('dockpull_user')
-      localStorage.removeItem('dockpull_config')
+      localStorage.removeItem('cove_token')
+      localStorage.removeItem('cove_user')
+      localStorage.removeItem('cove_config')
       window.location.href = '/login'
     }
     return Promise.reject(error)
@@ -74,6 +74,7 @@ export const configApi = {
   get: () => api.get('/config'),
   update: (data: any) => api.put('/config', data),
   detectRuntime: () => api.get('/config/detect-runtime'),
+  testDockerHost: (dockerHost: string, dockerHostTimeout?: number) => api.post('/config/test-docker-host', { docker_host: dockerHost, docker_host_timeout: dockerHostTimeout }),
 }
 
 export const browseApi = {
@@ -85,7 +86,7 @@ export const webhookApi = {
 }
 
 export const tokenApi = {
-  test: (registry: string, credentials?: { username?: string; password?: string; token?: string; cert?: string; region?: string; url?: string }) => api.post('/tokens/test', { registry, ...credentials }),
+  test: (registry: string, credentials?: { username?: string; password?: string; token?: string; cert?: string; region?: string; url?: string }) => api.post('/tokens/test', { registry, ...credentials }, { timeout: 30000 }),
 }
 
 export const statsApi = {

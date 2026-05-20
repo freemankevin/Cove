@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("dockpull-secret-key-change-in-production")
+var jwtSecret = []byte("cove-secret-key-change-in-production")
 
 type Claims struct {
 	UserID   int64  `json:"user_id"`

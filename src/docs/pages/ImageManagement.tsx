@@ -8,7 +8,7 @@ export default function ImageManagement() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '镜像管理 - DockerPull 文档' : 'Image Management - DockerPull Documentation'
+    document.title = language === 'zh' ? '镜像管理 - Cove 文档' : 'Image Management - Cove Documentation'
   }, [language])
 
   return (

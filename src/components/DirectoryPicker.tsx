@@ -118,12 +118,12 @@ export default function DirectoryPicker({ isOpen, onClose, onSelect, initialPath
              </div>
             <div>
               <div style={{
-                fontSize: '15px',
+                fontSize: '16px',
                 fontWeight: 600,
                 color: 'var(--text-primary)',
               }}>{t('dirPicker.title')}</div>
               <div style={{
-                fontSize: '12px',
+                fontSize: '13px',
                 color: 'var(--text-muted)',
                 marginTop: '1px',
               }}>{t('dirPicker.subtitle')}</div>
@@ -164,7 +164,7 @@ export default function DirectoryPicker({ isOpen, onClose, onSelect, initialPath
             gap: '2px',
           }}>
             <div style={{
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: 600,
               color: 'var(--text-muted)',
               textTransform: 'uppercase',
@@ -202,7 +202,7 @@ export default function DirectoryPicker({ isOpen, onClose, onSelect, initialPath
                 padding: '10px 12px',
                 borderBottom: '1px solid var(--border-color)',
                 background: 'var(--bg-secondary)',
-                fontSize: '12px',
+                fontSize: '13px',
                 fontWeight: 600,
                 color: 'var(--text-muted)',
                 userSelect: 'none',
@@ -232,7 +232,7 @@ export default function DirectoryPicker({ isOpen, onClose, onSelect, initialPath
             onClick={onClose}
             style={{
               padding: '8px 16px',
-              fontSize: '13px',
+              fontSize: '14px',
               whiteSpace: 'nowrap',
               flexShrink: 0,
               width: 'auto',
@@ -247,7 +247,7 @@ export default function DirectoryPicker({ isOpen, onClose, onSelect, initialPath
             disabled={loading}
             style={{
               padding: '8px 20px',
-              fontSize: '13px',
+              fontSize: '14px',
               whiteSpace: 'nowrap',
               flexShrink: 0,
               width: 'auto',

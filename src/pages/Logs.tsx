@@ -91,11 +91,11 @@ export default function Logs() {
             <span style={{
               background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
               color: 'var(--text-tertiary)', borderRadius: 'var(--radius-card)',
-              padding: '2px 8px', fontSize: '12px', fontWeight: 500,
+              padding: '2px 8px', fontSize: '13px', fontWeight: 500,
             }}>{filtered.length}</span>
           )}
         </div>
-        <button className="btn btn-secondary" onClick={fetchLogs} disabled={loading} style={{ height: '32px', padding: '0 12px', fontSize: '13px' }}>
+        <button className="btn btn-secondary" onClick={fetchLogs} disabled={loading} style={{ height: '32px', padding: '0 12px', fontSize: '14px' }}>
           <RefreshCw size={13} className={loading ? 'spin' : ''} />
           {t('logs.refresh')}
         </button>
@@ -120,7 +120,7 @@ style={{
                padding: '0 10px 0 30px',
                border: '1px solid var(--border-color)', borderRadius: 'var(--radius-xs)',
                background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
-               fontSize: '13px', outline: 'none',
+               fontSize: '14px', outline: 'none',
                transition: 'border-color .15s',
              }}
             onFocus={e => (e.target.style.borderColor = 'var(--purple-600)')}
@@ -139,7 +139,7 @@ style={{
             <button
               onClick={() => { setSelectedImageKey('all'); setSelectedAction('all'); setSelectedPlatform('all') }}
 style={{
-                 padding: '5px 10px', height: '32px', fontSize: '12px',
+                 padding: '5px 10px', height: '32px', fontSize: '13px',
                  border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer',
                  background: 'transparent', color: 'var(--text-muted)',
                  transition: 'color .12s',
@@ -165,7 +165,7 @@ style={{
           padding: '8px 16px',
           background: 'var(--bg-tertiary)',
           borderBottom: '1px solid var(--border-color)',
-          fontSize: '11.5px', fontWeight: 500,
+          fontSize: '12.5px', fontWeight: 500,
           color: 'var(--text-muted)', letterSpacing: '0.04em',
           textTransform: 'uppercase',
           alignItems: 'center',
@@ -177,15 +177,15 @@ style={{
         </div>
 
         {loading ? (
-          <div style={{ padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '13px' }}>
+          <div style={{ padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: 'var(--text-muted)', fontSize: '14px' }}>
             <RefreshCw size={15} className="spin" />
             {t('logs.loading')}
           </div>
         ) : paginated.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center' }}>
             <FileText size={36} style={{ color: 'var(--text-muted)', margin: '0 auto 12px', display: 'block', strokeWidth: 1.25 }} />
-            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>{t('logs.empty.title')}</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>{t('logs.empty.title')}</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
               {searchQuery || selectedAction !== 'all' || selectedImageKey !== 'all' || selectedPlatform !== 'all'
                 ? t('logs.empty.desc')
                 : t('logs.empty.noLogs')}
@@ -210,7 +210,7 @@ style={{
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                   {formatTime(log.created_at)}
                 </span>
 
@@ -225,7 +225,7 @@ style={{
                     showCopy={false}
                   />
                 ) : (
-                  <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
                 )}
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
@@ -251,7 +251,7 @@ style={{
             borderTop: '1px solid var(--border-color)',
             background: 'var(--bg-tertiary)',
           }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>
               {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
             <div style={{ display: 'flex', gap: '6px' }}>

@@ -39,7 +39,7 @@ function MainApp() {
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="logo">
-          <img src="/logo.png" alt="DockerPull" className="logo-image" />
+          <img src="/logo.png" alt="Cove" className="logo-image" />
         </div>
 
         <ul className="nav-links">
@@ -87,7 +87,7 @@ function MainApp() {
           </li>
           <li>
             <a
-              href="https://github.com/freemankevin/DockerPull/issues"
+              href="https://github.com/freemankevin/Cove/issues"
               className="docs-link"
               target="_blank"
               rel="noopener noreferrer"
@@ -127,6 +127,7 @@ function MainApp() {
           <div className="card-body">
             <Routes>
               <Route path="/"             element={<Images />} />
+              <Route path="/images"       element={<Images />} />
               <Route path="/local-images" element={<LocalImages />} />
               <Route path="/logs"         element={<Logs />} />
               <Route path="/stats"        element={<Stats />} />

@@ -42,7 +42,7 @@ style={{
            borderRadius: 'var(--radius-card)',
            background: 'var(--bg-tertiary)',
            color: selectedOption ? 'var(--text-primary)' : 'var(--text-muted)',
-           fontSize: '14px',
+           fontSize: '15px',
            textAlign: 'left',
            cursor: 'pointer',
            display: 'flex',
@@ -87,7 +87,7 @@ style={{
                 background: opt.value === value ? 'var(--accent-bg)' : 'transparent',
                 color: opt.value === value ? 'var(--purple-400)' : 'var(--text-primary)',
                 transition: 'background 0.1s ease',
-                fontSize: '14px',
+                fontSize: '15px',
               }}
               onMouseEnter={(e) => {
                 if (opt.value !== value) {

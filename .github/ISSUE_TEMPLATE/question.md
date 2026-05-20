@@ -1,6 +1,6 @@
 ---
 name: ❓ Question
-about: Ask a question about using DockPull
+about: Ask a question about using Cove
 title: '[Question] '
 labels: question
 assignees: ''

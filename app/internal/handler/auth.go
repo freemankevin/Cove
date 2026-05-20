@@ -2,8 +2,8 @@ package handler
 
 import (
 	"database/sql"
-	"docker-pull-manager/internal/middleware"
-	"docker-pull-manager/internal/models"
+	"cove/internal/middleware"
+	"cove/internal/models"
 	"fmt"
 	"net/http"
 	"time"

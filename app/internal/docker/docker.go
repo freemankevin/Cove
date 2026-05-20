@@ -2,11 +2,12 @@ package docker
 
 import (
 	"context"
-	"docker-pull-manager/internal/config"
+	"cove/internal/config"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -34,6 +35,17 @@ func NewDockerService(cfg *config.Config) *DockerService {
 	}
 }
 
+// ResetClient clears the cached Docker client so it will be recreated
+// on the next API call. Call this after changing DockerHost or ContainerRuntime.
+func (s *DockerService) ResetClient() {
+	if s.cli != nil {
+		s.cli.Close()
+		s.cli = nil
+	}
+	s.cliErr = nil
+	s.cliOnce = sync.Once{}
+}
+
 func (s *DockerService) getClient() (*client.Client, error) {
 	s.cliOnce.Do(func() {
 		opts := []client.Opt{client.WithAPIVersionNegotiation()}
@@ -46,16 +58,76 @@ func (s *DockerService) getClient() (*client.Client, error) {
 
 		if host := os.Getenv("CONTAINER_HOST"); host != "" {
 			opts = append(opts, client.WithHost(host))
+		} else if s.cfg.DockerHost != "" {
+			opts = append(opts, client.WithHost(s.cfg.DockerHost))
+		} else if runtime.GOOS == "windows" {
+			if dockerHost := detectWindowsDockerSocket(); dockerHost != "" {
+				opts = append(opts, client.WithHost(dockerHost))
+			}
 		}
 
 		opts = append(opts, client.FromEnv)
-		s.cli, s.cliErr = client.NewClientWithOpts(opts...)
+		cli, err := client.NewClientWithOpts(opts...)
+		if err != nil {
+			s.cliErr = err
+			return
+		}
+
+		// Explicit API version negotiation for remote daemons (WSL2 etc.)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		cli.NegotiateAPIVersion(ctx)
+		cancel()
+
+		s.cli = cli
 	})
 	return s.cli, s.cliErr
 }
 
 func (s *DockerService) GetClient() (*client.Client, error) {
 	return s.getClient()
+}
+
+// TestDockerHost validates connectivity to a specific Docker host.
+// timeoutSec controls the TCP dial and HTTP client timeout (default 180).
+func TestDockerHost(host string, timeoutSec int) error {
+	if timeoutSec <= 0 {
+		timeoutSec = 180
+	}
+	timeout := time.Duration(timeoutSec) * time.Second
+
+	// Quick TCP check first
+	parsed := strings.TrimPrefix(host, "tcp://")
+	if parsed != host {
+		conn, err := net.DialTimeout("tcp", parsed, timeout)
+		if err != nil {
+			return fmt.Errorf("tcp dial failed: %w", err)
+		}
+		conn.Close()
+	}
+
+	// Try HTTP GET /_ping directly (avoids Docker SDK Ping quirks)
+	httpHost := strings.Replace(host, "tcp://", "http://", 1)
+	httpHost = strings.Replace(httpHost, "npipe://", "http://", 1)
+	if !strings.HasPrefix(httpHost, "http") {
+		httpHost = "http://" + httpHost
+	}
+
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+		},
+	}
+	resp, err := client.Get(httpHost + "/_ping")
+	if err != nil {
+		return fmt.Errorf("http ping failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status: %s", resp.Status)
+	}
+	return nil
 }
 
 func detectPodmanSocket() string {
@@ -83,6 +155,68 @@ func detectPodmanSocket() string {
 		}
 	}
 
+	return ""
+}
+
+func detectWindowsDockerSocket() string {
+	// 1. Try WSL2 Docker via TCP (Docker Engine in WSL2 Ubuntu)
+	if wslHost := detectWSL2Docker(); wslHost != "" {
+		return wslHost
+	}
+
+	// 2. Fallback to Docker Desktop named pipe
+	return "npipe:////./pipe/docker_engine"
+}
+
+func detectWSL2Docker() string {
+	if runtime.GOOS != "windows" {
+		return ""
+	}
+
+	// Try to get WSL2 IP via `wsl hostname -I`
+	cmd := exec.Command("wsl", "hostname", "-I")
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+
+	ips := strings.Fields(string(output))
+	for _, ip := range ips {
+		ip = strings.TrimSpace(ip)
+		if ip == "" {
+			continue
+		}
+		host := fmt.Sprintf("tcp://%s:2375", ip)
+		if IsDockerReachable(host) {
+			return host
+		}
+	}
+
+	return ""
+}
+
+// IsDockerReachable checks if a Docker TCP host is reachable via quick dial
+func IsDockerReachable(host string) bool {
+	parsed := strings.TrimPrefix(host, "tcp://")
+	if parsed == host {
+		return false
+	}
+	conn, err := net.DialTimeout("tcp", parsed, 2*time.Second)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
+}
+
+// DetectRemoteDockerHost probes for external Docker hosts (WSL2, etc.)
+// Returns empty string if none found
+func DetectRemoteDockerHost() string {
+	if runtime.GOOS == "windows" {
+		if wslHost := detectWSL2Docker(); wslHost != "" {
+			return wslHost
+		}
+	}
 	return ""
 }
 
@@ -170,6 +304,17 @@ func (s *DockerService) getAuthConfigForRegistry(registry string) *types.AuthCon
 			}
 		}
 	case strings.Contains(registry, "harbor") || (s.cfg.HarborUrl != "" && strings.HasPrefix(registry, s.cfg.HarborUrl)):
+		// Try new multi-instance configs first
+		for _, hc := range s.cfg.HarborConfigs {
+			if hc.URL != "" && strings.HasPrefix(registry, hc.URL) {
+				return &types.AuthConfig{
+					Username:      hc.Username,
+					Password:      hc.Password,
+					ServerAddress: registry,
+				}
+			}
+		}
+		// Fallback to legacy single config
 		if s.cfg.HarborUsername != "" && s.cfg.HarborPassword != "" {
 			return &types.AuthConfig{
 				Username:      s.cfg.HarborUsername,
@@ -224,6 +369,28 @@ func (s *DockerService) enrichPullError(err error, registry, fullName string) er
 		return fmt.Errorf("%s - Hint: Registry host unreachable. Check network connectivity or registry address", errMsg)
 	}
 	
+	return err
+}
+
+func (s *DockerService) enrichLocalImageError(err error) error {
+	errMsg := err.Error()
+
+	if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "actively refused") {
+		return fmt.Errorf("%s - Hint: Docker daemon refused connection. WSL2 IP may have changed. Run 'wsl hostname -I' in WSL2 to get the new IP and update Settings > Docker Host", errMsg)
+	}
+
+	if strings.Contains(errMsg, "client version") && strings.Contains(errMsg, "too old") {
+		return fmt.Errorf("%s - Hint: Docker client API version is incompatible. Try restarting the backend or check Docker daemon version", errMsg)
+	}
+
+	if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "context deadline exceeded") {
+		return fmt.Errorf("%s - Hint: Docker daemon is not responding. Check if the daemon is running and the Docker Host address is correct", errMsg)
+	}
+
+	if strings.Contains(errMsg, "no such host") || strings.Contains(errMsg, "dial tcp") {
+		return fmt.Errorf("%s - Hint: Cannot reach Docker host. Verify the Docker Host address in Settings", errMsg)
+	}
+
 	return err
 }
 
@@ -449,13 +616,13 @@ func (s *DockerService) GetImagePlatformsFromRegistry(imageName, tag string) ([]
 }
 
 type LocalImage struct {
-	ID           string   `json:"id"`
-	RepoTags     []string `json:"repo_tags"`
-	Size         int64    `json:"size"`
-	CreatedAt    int64    `json:"created_at"`
-	Repository   string   `json:"repository"`
-	Tag          string   `json:"tag"`
-	Architecture string   `json:"architecture"`
+	ID         string   `json:"id"`
+	RepoTags   []string `json:"repo_tags"`
+	Size       int64    `json:"size"`
+	CreatedAt  int64    `json:"created_at"`
+	Repository string   `json:"repository"`
+	Tag        string   `json:"tag"`
+	Platform   string   `json:"platform"`
 }
 
 func (s *DockerService) ListLocalImages(ctx context.Context) ([]LocalImage, error) {
@@ -466,7 +633,23 @@ func (s *DockerService) ListLocalImages(ctx context.Context) ([]LocalImage, erro
 
 	images, err := cli.ImageList(ctx, types.ImageListOptions{All: false})
 	if err != nil {
-		return nil, err
+		return nil, s.enrichLocalImageError(err)
+	}
+
+	// Inspect unique image IDs to get architecture, with a short timeout per call
+	archMap := make(map[string]string)
+	for _, img := range images {
+		if _, ok := archMap[img.ID]; ok {
+			continue
+		}
+		inspectCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		inspect, _, err := cli.ImageInspectWithRaw(inspectCtx, img.ID)
+		cancel()
+		if err == nil && inspect.Architecture != "" {
+			archMap[img.ID] = inspect.Architecture
+		} else {
+			archMap[img.ID] = "unknown"
+		}
 	}
 
 	result := []LocalImage{}
@@ -480,20 +663,14 @@ func (s *DockerService) ListLocalImages(ctx context.Context) ([]LocalImage, erro
 			}
 			repository, imageTag := splitRepoTag(tag)
 
-			inspect, _, err := cli.ImageInspectWithRaw(ctx, img.ID)
-			architecture := "unknown"
-			if err == nil {
-				architecture = inspect.Architecture
-			}
-
 			result = append(result, LocalImage{
-				ID:           img.ID,
-				RepoTags:     img.RepoTags,
-				Size:         img.Size,
-				CreatedAt:    img.Created,
-				Repository:   repository,
-				Tag:          imageTag,
-				Architecture: architecture,
+				ID:         img.ID,
+				RepoTags:   img.RepoTags,
+				Size:       img.Size,
+				CreatedAt:  img.Created,
+				Repository: repository,
+				Tag:        imageTag,
+				Platform:   archMap[img.ID],
 			})
 		}
 	}

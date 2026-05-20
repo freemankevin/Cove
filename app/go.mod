@@ -1,4 +1,4 @@
-module docker-pull-manager
+module cove
 
 go 1.23
 

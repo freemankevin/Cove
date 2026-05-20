@@ -22,6 +22,15 @@ export interface ImageLog {
   created_at: string
 }
 
+export interface HarborConfig {
+  id: string
+  url: string
+  username: string
+  password: string
+  cert: string
+  verified: boolean
+}
+
 export interface Config {
   export_path: string
   retry_max_attempts: number
@@ -33,6 +42,8 @@ export interface Config {
   default_platform: string
   gzip_compression: number
   container_runtime: string
+  docker_host: string
+  docker_host_timeout: number
   ghcr_token: string
   ghcr_username: string
   dockerhub_username: string
@@ -49,6 +60,7 @@ export interface Config {
   harbor_username: string
   harbor_password: string
   harbor_tls_cert: string
+  harbor_configs: HarborConfig[]
   tencentcloud_username: string
   tencentcloud_password: string
   huaweicloud_username: string
@@ -76,5 +88,5 @@ export interface LocalImage {
   created_at: number
   repository: string
   tag: string
-  architecture: string
+  platform: string
 }

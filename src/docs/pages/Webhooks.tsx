@@ -8,7 +8,7 @@ export default function Webhooks() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? 'Webhooks - DockerPull 文档' : 'Webhooks - DockerPull Documentation'
+    document.title = language === 'zh' ? 'Webhooks - Cove 文档' : 'Webhooks - Cove Documentation'
   }, [language])
 
   return (
@@ -111,7 +111,7 @@ export default function Webhooks() {
         <CodeBlock
           title={language === 'zh' ? 'Slack Webhook 处理' : 'Slack Webhook Handler'}
           language="Node.js"
-          code={`app.post('/webhook/dockpull', (req, res) => {
+          code={`app.post('/webhook/cove', (req, res) => {
   const { event, data } = req.body;
   
   const message = {

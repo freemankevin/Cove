@@ -51,46 +51,58 @@ type BatchCreateRequest struct {
 	Images []CreateImageRequest `json:"images" binding:"required"`
 }
 
+type HarborConfig struct {
+	ID       string `json:"id"`
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Cert     string `json:"cert"`
+	Verified bool   `json:"verified"`
+}
+
 type UpdateConfigRequest struct {
-	ExportPath           string `json:"export_path"`
-	RetryMaxAttempts     int    `json:"retry_max_attempts"`
-	RetryIntervalSec     int    `json:"retry_interval_sec"`
-	EnableWebhook        bool   `json:"enable_webhook"`
-	WebhookURL           string `json:"webhook_url"`
-	WebhookType          string `json:"webhook_type"`
-	ConcurrentPulls      int    `json:"concurrent_pulls"`
-	DefaultPlatform      string `json:"default_platform"`
-	GzipCompression      int    `json:"gzip_compression"`
-	GhcrToken            string `json:"ghcr_token"`
-	GhcrUsername         string `json:"ghcr_username"`
-	GhcrVerified         bool   `json:"ghcr_verified"`
-	DockerHubUsername    string `json:"dockerhub_username"`
-	DockerHubToken       string `json:"dockerhub_token"`
-	DockerHubVerified    bool   `json:"dockerhub_verified"`
-	QuayUsername         string `json:"quay_username" db:"quay_username"`
-	QuayPassword         string `json:"quay_password" db:"quay_password"`
-	QuayVerified         bool   `json:"quay_verified"`
-	AcrUsername          string `json:"acr_username"`
-	AcrPassword          string `json:"acr_password"`
-	AcrVerified          bool   `json:"acr_verified"`
-	EcrAccessKeyId       string `json:"ecr_access_key_id"`
-	EcrSecretAccessKey   string `json:"ecr_secret_access_key"`
-	EcrRegion            string `json:"ecr_region"`
-	EcrVerified          bool   `json:"ecr_verified"`
-	GarToken             string `json:"gar_token"`
-	GarVerified          bool   `json:"gar_verified"`
-	HarborUrl            string `json:"harbor_url"`
-	HarborUsername       string `json:"harbor_username"`
-	HarborPassword       string `json:"harbor_password"`
-	HarborTlsCert        string `json:"harbor_tls_cert"`
-	HarborVerified       bool   `json:"harbor_verified"`
-	TencentcloudUsername string `json:"tencentcloud_username"`
-	TencentcloudPassword string `json:"tencentcloud_password"`
-	TencentcloudVerified bool   `json:"tencentcloud_verified"`
-	HuaweicloudUsername  string `json:"huaweicloud_username"`
-	HuaweicloudPassword  string `json:"huaweicloud_password"`
-	HuaweicloudVerified  bool   `json:"huaweicloud_verified"`
-	ContainerRuntime     string `json:"container_runtime"`
+	ExportPath           string         `json:"export_path"`
+	RetryMaxAttempts     int            `json:"retry_max_attempts"`
+	RetryIntervalSec     int            `json:"retry_interval_sec"`
+	EnableWebhook        bool           `json:"enable_webhook"`
+	WebhookURL           string         `json:"webhook_url"`
+	WebhookType          string         `json:"webhook_type"`
+	ConcurrentPulls      int            `json:"concurrent_pulls"`
+	DefaultPlatform      string         `json:"default_platform"`
+	GzipCompression      int            `json:"gzip_compression"`
+	GhcrToken            string         `json:"ghcr_token"`
+	GhcrUsername         string         `json:"ghcr_username"`
+	GhcrVerified         bool           `json:"ghcr_verified"`
+	DockerHubUsername    string         `json:"dockerhub_username"`
+	DockerHubToken       string         `json:"dockerhub_token"`
+	DockerHubVerified    bool           `json:"dockerhub_verified"`
+	QuayUsername         string         `json:"quay_username" db:"quay_username"`
+	QuayPassword         string         `json:"quay_password" db:"quay_password"`
+	QuayVerified         bool           `json:"quay_verified"`
+	AcrUsername          string         `json:"acr_username"`
+	AcrPassword          string         `json:"acr_password"`
+	AcrVerified          bool           `json:"acr_verified"`
+	EcrAccessKeyId       string         `json:"ecr_access_key_id"`
+	EcrSecretAccessKey   string         `json:"ecr_secret_access_key"`
+	EcrRegion            string         `json:"ecr_region"`
+	EcrVerified          bool           `json:"ecr_verified"`
+	GarToken             string         `json:"gar_token"`
+	GarVerified          bool           `json:"gar_verified"`
+	HarborUrl            string         `json:"harbor_url"`
+	HarborUsername       string         `json:"harbor_username"`
+	HarborPassword       string         `json:"harbor_password"`
+	HarborTlsCert        string         `json:"harbor_tls_cert"`
+	HarborVerified       bool           `json:"harbor_verified"`
+	HarborConfigs        []HarborConfig `json:"harbor_configs"`
+	TencentcloudUsername string         `json:"tencentcloud_username"`
+	TencentcloudPassword string         `json:"tencentcloud_password"`
+	TencentcloudVerified bool           `json:"tencentcloud_verified"`
+	HuaweicloudUsername  string         `json:"huaweicloud_username"`
+	HuaweicloudPassword  string         `json:"huaweicloud_password"`
+	HuaweicloudVerified  bool           `json:"huaweicloud_verified"`
+	ContainerRuntime     string         `json:"container_runtime"`
+	DockerHost           string         `json:"docker_host"`
+	DockerHostTimeout    int            `json:"docker_host_timeout"`
 }
 
 type Settings struct {
@@ -126,6 +138,7 @@ type Settings struct {
 	HarborPassword       string `json:"harbor_password" db:"harbor_password"`
 	HarborTlsCert        string `json:"harbor_tls_cert" db:"harbor_tls_cert"`
 	HarborVerified       bool   `json:"harbor_verified" db:"harbor_verified"`
+	HarborConfigsJSON    string `json:"-" db:"harbor_configs"`
 	TencentcloudUsername string `json:"tencentcloud_username" db:"tencentcloud_username"`
 	TencentcloudPassword string `json:"tencentcloud_password" db:"tencentcloud_password"`
 	TencentcloudVerified bool   `json:"tencentcloud_verified" db:"tencentcloud_verified"`
@@ -133,6 +146,8 @@ type Settings struct {
 	HuaweicloudPassword  string `json:"huaweicloud_password" db:"huaweicloud_password"`
 	HuaweicloudVerified  bool   `json:"huaweicloud_verified" db:"huaweicloud_verified"`
 	ContainerRuntime     string `json:"container_runtime" db:"container_runtime"`
+	DockerHost           string `json:"docker_host" db:"docker_host"`
+	DockerHostTimeout    int    `json:"docker_host_timeout" db:"docker_host_timeout"`
 }
 
 type LoginRequest struct {

@@ -115,7 +115,7 @@ style={{
                  color: 'white',
                  borderRadius: 'var(--radius-card)',
                  boxShadow: '0 4px 12px rgba(0,0,0,0.15), 0 0 1px rgba(0,0,0,0.1)',
-                 fontSize: '14px',
+                 fontSize: '15px',
                  fontWeight: 500,
                  pointerEvents: 'auto',
                  cursor: 'pointer',

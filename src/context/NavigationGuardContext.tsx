@@ -136,7 +136,7 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
                   <AlertTriangle size={20} />
                 </div>
                 <div style={{
-                  fontSize: '16px',
+                  fontSize: '17px',
                   fontWeight: 600,
                   color: 'var(--text-primary)',
                 }}>
@@ -173,7 +173,7 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
             <div style={{
               padding: '20px',
               color: 'var(--text-secondary)',
-              fontSize: '14px',
+              fontSize: '15px',
               lineHeight: '1.6',
             }}>
               {t('unsaved.message')}
@@ -192,7 +192,7 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
                 onClick={handleDiscard}
                 style={{
                   padding: '8px 20px',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                   width: 'auto',
@@ -207,7 +207,7 @@ export function NavigationGuardProvider({ children }: { children: ReactNode }) {
                 disabled={saving}
                 style={{
                   padding: '8px 20px',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                   width: 'auto',

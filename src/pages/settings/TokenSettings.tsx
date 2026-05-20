@@ -1,10 +1,10 @@
-import { Plus, X, Upload, FileText, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ShieldCheck, ShieldAlert, Info } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { Plus, X, Upload, FileText, CheckCircle2, XCircle, Loader2, Eye, EyeOff, ShieldCheck, ShieldAlert, Info, ChevronDown, ArrowRightFromLine } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import SettingRow from '../../components/SettingRow'
 import { TokenRegistryIcon } from '../../components/ImageComponents'
 import { TOKEN_REGISTRY_CONFIG_KEYS, TOKEN_REGISTRY_CONFIG, TokenRegistryId } from '../../constants/settings'
-import { tokenApi } from '../../api'
+import { tokenApi, configApi } from '../../api'
 
 interface TokenSettingsProps {
   getValue: (key: string) => any
@@ -16,6 +16,7 @@ interface TokenSettingsProps {
   setShowAddToken: (show: boolean) => void
   verifiedTokens: Record<TokenRegistryId, boolean>
   setVerifiedTokens: (tokens: Record<TokenRegistryId, boolean> | ((prev: Record<TokenRegistryId, boolean>) => Record<TokenRegistryId, boolean>)) => void
+  onSwitchTab?: (tab: string) => void
 }
 
 interface TestStatus {
@@ -23,14 +24,18 @@ interface TestStatus {
   testing: boolean
   success: boolean | null
   message: string
+  errorType?: string
+  dockerHostConfigured?: boolean
 }
 
-export default function TokenSettings({ getValue, formData, setFormData, visibleTokens, setVisibleTokens, showAddToken, setShowAddToken, verifiedTokens, setVerifiedTokens }: TokenSettingsProps) {
+export default function TokenSettings({ getValue, formData, setFormData, visibleTokens, setVisibleTokens, showAddToken, setShowAddToken, verifiedTokens, setVerifiedTokens, onSwitchTab }: TokenSettingsProps) {
   const { t } = useLanguage()
-  const [certInputMode, setCertInputMode] = useState<'paste' | 'upload'>('paste')
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [testStatuses, setTestStatuses] = useState<Record<TokenRegistryId, TestStatus>>({} as Record<TokenRegistryId, TestStatus>)
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({})
+  const [harborTestStatuses, setHarborTestStatuses] = useState<Record<string, { testing: boolean; success: boolean | null; message: string }>>({})
+  const [certInputModes, setCertInputModes] = useState<Record<string, 'paste' | 'upload'>>({})
+  const [certExpanded, setCertExpanded] = useState<Record<string, boolean>>({})
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     const changedRegistries: TokenRegistryId[] = []
@@ -47,6 +52,14 @@ export default function TokenSettings({ getValue, formData, setFormData, visible
     }
 
     for (const tokenId of visibleTokens) {
+      if (tokenId === 'harbor') {
+        const configs = getValue('harbor_configs')
+        const formConfigs = formData.harbor_configs
+        if (formConfigs !== undefined && JSON.stringify(formConfigs) !== JSON.stringify(configs)) {
+          changedRegistries.push(tokenId)
+        }
+        continue
+      }
       const fields = registryFields[tokenId]
       if (fields) {
         for (const field of fields) {
@@ -112,6 +125,8 @@ export default function TokenSettings({ getValue, formData, setFormData, visible
       })
       if (tokenId === 'harbor') {
         newFormData['harbor_tls_cert'] = ''
+        newFormData['harbor_configs'] = []
+        setHarborTestStatuses({})
       }
       setFormData(newFormData)
       setVerifiedTokens(prev => {
@@ -127,16 +142,31 @@ export default function TokenSettings({ getValue, formData, setFormData, visible
     }
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onload = (event) => {
         const content = event.target?.result as string
-        setFormData({ ...formData, harbor_tls_cert: content })
+        updateHarborConfig(idx, 'cert', content)
       }
       reader.readAsText(file)
     }
+  }
+
+  const getVerifiedField = (tokenId: TokenRegistryId): string | null => {
+    const fieldMap: Record<TokenRegistryId, string> = {
+      dockerhub: 'dockerhub_verified',
+      ghcr: 'ghcr_verified',
+      quay: 'quay_verified',
+      acr: 'acr_verified',
+      ecr: 'ecr_verified',
+      gar: 'gar_verified',
+      harbor: 'harbor_verified',
+      tencentcloud: 'tencentcloud_verified',
+      huaweicloud: 'huaweicloud_verified',
+    }
+    return fieldMap[tokenId] || null
   }
 
   const getRegistryKey = (tokenId: TokenRegistryId): string => {
@@ -208,10 +238,21 @@ export default function TokenSettings({ getValue, formData, setFormData, visible
       const data = response.data
       setTestStatuses(prev => ({
         ...prev,
-        [tokenId]: { registry: tokenId, testing: false, success: data.success, message: data.message }
+        [tokenId]: {
+          registry: tokenId,
+          testing: false,
+          success: data.success,
+          message: data.message,
+          errorType: data.error_type,
+          dockerHostConfigured: data.docker_host_configured,
+        }
       }))
       if (data.success) {
         setVerifiedTokens(prev => ({ ...prev, [tokenId]: true }))
+        const verifiedField = getVerifiedField(tokenId)
+        if (verifiedField) {
+          configApi.update({ [verifiedField]: true }).catch(() => {})
+        }
       } else {
         setVerifiedTokens(prev => ({ ...prev, [tokenId]: false }))
       }
@@ -225,16 +266,107 @@ export default function TokenSettings({ getValue, formData, setFormData, visible
     }
   }
 
+  const getHarborConfigs = (): { id: string; url: string; username: string; password: string; cert: string; verified: boolean }[] => {
+    const configs = getValue('harbor_configs')
+    if (Array.isArray(configs) && configs.length > 0) return configs
+    // Auto-migrate legacy single-harbor config
+    const oldUrl = getValue('harbor_url')
+    const oldUsername = getValue('harbor_username')
+    const oldPassword = getValue('harbor_password')
+    const oldCert = getValue('harbor_tls_cert')
+    const oldVerified = getValue('harbor_verified')
+    if (oldUrl || oldUsername || oldPassword) {
+      return [{
+        id: 'harbor-legacy',
+        url: oldUrl || '',
+        username: oldUsername || '',
+        password: oldPassword || '',
+        cert: oldCert || '',
+        verified: !!oldVerified,
+      }]
+    }
+    return []
+  }
+
+  const updateHarborConfig = (idx: number, field: string, value: any) => {
+    const configs = getHarborConfigs()
+    configs[idx] = { ...configs[idx], [field]: value }
+    setFormData({ ...formData, harbor_configs: configs })
+  }
+
+  const addHarborInstance = () => {
+    const configs = getHarborConfigs()
+    configs.push({ id: `harbor-${Date.now()}`, url: '', username: '', password: '', cert: '', verified: false })
+    setFormData({ ...formData, harbor_configs: configs })
+  }
+
+  const removeHarborInstance = (idx: number) => {
+    const configs = getHarborConfigs()
+    configs.splice(idx, 1)
+    setFormData({ ...formData, harbor_configs: configs })
+  }
+
+  const testHarborInstance = async (idx: number) => {
+    const configs = getHarborConfigs()
+    const instance = configs[idx]
+    if (!instance) return
+    setHarborTestStatuses(prev => ({ ...prev, [instance.id]: { testing: true, success: null, message: '' } }))
+    try {
+      const response = await tokenApi.test(instance.url || 'harbor', {
+        url: instance.url,
+        username: instance.username,
+        password: instance.password,
+        cert: instance.cert,
+      })
+      const data = response.data
+      setHarborTestStatuses(prev => ({ ...prev, [instance.id]: { testing: false, success: data.success, message: data.message } }))
+      if (data.success) {
+        configs[idx].verified = true
+        setFormData({ ...formData, harbor_configs: [...configs] })
+        configApi.update({ harbor_configs: [...configs] }).catch(() => {})
+      } else {
+        configs[idx].verified = false
+        setFormData({ ...formData, harbor_configs: [...configs] })
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || error.message || 'Connection failed'
+      setHarborTestStatuses(prev => ({ ...prev, [instance.id]: { testing: false, success: false, message: errorMsg } }))
+      configs[idx].verified = false
+      setFormData({ ...formData, harbor_configs: [...configs] })
+    }
+  }
+
   const getVerificationStatus = (tokenId: TokenRegistryId) => {
     const registry = getTokenRegistryConfig(tokenId)
     if (!registry?.requireTest) return null
-    
+
+    if (tokenId === 'harbor') {
+      const configs = getHarborConfigs()
+      const hasValue = configs.length > 0 && configs.some(c => c.url && c.url.trim() !== '' && c.username && c.username.trim() !== '')
+      if (!hasValue) {
+        return { status: 'empty', icon: null, text: '' }
+      }
+      const allVerified = configs.length > 0 && configs.every(c => c.verified)
+      const anyTesting = Object.values(harborTestStatuses).some(s => s.testing)
+      if (anyTesting) {
+        return { status: 'testing', icon: <Loader2 size={14} className="spin" />, text: t('settings.testing') }
+      }
+      if (allVerified) {
+        return { status: 'verified', icon: <ShieldCheck size={14} />, text: t('settings.tokens.verified') }
+      }
+      const anyFailed = Object.values(harborTestStatuses).some(s => s.success === false)
+      if (anyFailed) {
+        return { status: 'failed', icon: <ShieldAlert size={14} />, text: t('settings.tokens.failed') }
+      }
+      return { status: 'unverified', icon: <Info size={14} />, text: t('settings.tokens.unverified') }
+    }
+
     const fields = registry.checkKeys
     const hasValue = fields.some(key => {
       const val = formData[key] !== undefined ? formData[key] : getValue(key)
       return val && val.trim() !== ''
     })
-    
+
     if (!hasValue) {
       return { status: 'empty', icon: null, text: '' }
     }
@@ -273,7 +405,7 @@ export default function TokenSettings({ getValue, formData, setFormData, visible
             <TokenRegistryIcon tokenId="ecr" />
             <TokenRegistryIcon tokenId="gar" />
           </div>
-          <p style={{ margin: 0, fontSize: '14px' }}>{t('settings.tokens.none')}</p>
+          <p style={{ margin: 0, fontSize: '15px' }}>{t('settings.tokens.none')}</p>
           <button
             onClick={() => setShowAddToken(true)}
             style={{
@@ -282,7 +414,7 @@ export default function TokenSettings({ getValue, formData, setFormData, visible
               alignItems: 'center',
               gap: '6px',
               padding: '8px 16px',
-              fontSize: '13px',
+              fontSize: '14px',
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-xs)',
               background: 'var(--bg-secondary)',
@@ -311,7 +443,7 @@ label={
                 <span>{registry.name}</span>
                 {requiresVerification && verification && (
                   <span style={{
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: '500',
                     color: verification.status === 'verified' ? 'var(--green-500)' : 
                            verification.status === 'failed' ? 'var(--red-500)' : 
@@ -351,189 +483,363 @@ label={
             noBorder={index === visibleTokens.length - 1 && !showAddToken}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {registry.fields.map(field => (
-                  <div key={field.key} style={{ position: 'relative', flex: registry.fields.length > 1 ? 1 : undefined, minWidth: '200px' }}>
-                    <input
-                      type={field.type === 'password' && !visiblePasswords[field.key] ? 'password' : 'text'}
-                      className="form-control"
-                      value={getValue(field.key) || ''}
-                      onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
-                      placeholder={field.placeholder}
-                      style={{ paddingRight: field.type === 'password' ? '40px' : undefined }}
-                    />
-                    {field.type === 'password' && (
-                      <button
-                        type="button"
-                        onClick={() => togglePasswordVisibility(field.key)}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          padding: '4px',
-                          border: 'none',
-                          background: 'transparent',
-                          color: 'var(--text-muted)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                        title={visiblePasswords[field.key] ? t('settings.hide') : t('settings.show')}
-                      >
-                        {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button
-                  type="button"
-                  onClick={() => testConnection(tokenId)}
-                  disabled={testStatuses[tokenId]?.testing}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 20px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    border: registry.requireTest ? '1px solid var(--purple-600)' : '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-sm)',
-                    background: registry.requireTest ? 'var(--accent-bg)' : 'var(--bg-secondary)',
-                    color: registry.requireTest ? 'var(--purple-400)' : 'var(--text-primary)',
-                    cursor: testStatuses[tokenId]?.testing ? 'not-allowed' : 'pointer',
-                    opacity: testStatuses[tokenId]?.testing ? 0.6 : 1,
-                  }}
-                >
-                  {testStatuses[tokenId]?.testing ? (
-                    <Loader2 size={16} className="spin" />
-                  ) : (
-                    <CheckCircle2 size={16} />
-                  )}
-                  {testStatuses[tokenId]?.testing ? t('settings.testing') : t('settings.test')}
-                </button>
-                {testStatuses[tokenId] && !testStatuses[tokenId].testing && (
-                  <span style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: testStatuses[tokenId].success ? 'var(--green-500)' : 'var(--red-500)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}>
-                    {testStatuses[tokenId].success ? (
-                      <CheckCircle2 size={16} />
-                    ) : (
-                      <XCircle size={16} />
-                    )}
-                    {testStatuses[tokenId].message}
-                  </span>
-                )}
-                {registry.requireTest && !verifiedTokens[tokenId] && !testStatuses[tokenId]?.testing && (
-                  <span style={{
-                    fontSize: '12px',
-                    color: 'var(--orange-500)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}>
-                    <Info size={12} />
-                    {t('settings.tokens.mustVerify')}
-                  </span>
-                )}
-              </div>
-              {tokenId === 'harbor' && (
-                <div style={{ marginTop: '8px' }}>
-                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                    {t('token.harbor.tlsCert')} ({t('token.harbor.optional')})
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setCertInputMode('paste')}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '10px 16px',
-                        fontSize: '14px',
-                        border: certInputMode === 'paste' ? '1px solid var(--purple-600)' : '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-sm)',
-                        background: certInputMode === 'paste' ? 'var(--accent-bg)' : 'var(--bg-tertiary)',
-                        color: certInputMode === 'paste' ? 'var(--purple-400)' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <FileText size={16} />
-                      {t('token.harbor.paste')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCertInputMode('upload')}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '10px 16px',
-                        fontSize: '14px',
-                        border: certInputMode === 'upload' ? '1px solid var(--purple-600)' : '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-sm)',
-                        background: certInputMode === 'upload' ? 'var(--accent-bg)' : 'var(--bg-tertiary)',
-                        color: certInputMode === 'upload' ? 'var(--purple-400)' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Upload size={16} />
-                      {t('token.harbor.upload')}
-                    </button>
-                  </div>
-                  {certInputMode === 'paste' ? (
-                    <textarea
-                      className="form-control"
-                      value={getValue('harbor_tls_cert') || ''}
-                      onChange={e => setFormData({ ...formData, harbor_tls_cert: e.target.value })}
-                      placeholder={t('token.harbor.certPlaceholder')}
-                      rows={4}
-                      style={{ fontSize: '13px', fontFamily: 'var(--font-mono)' }}
-                    />
-                  ) : (
-                    <div>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        accept=".crt,.cer,.cert,.pem"
-                        onChange={handleFileUpload}
-                        style={{ display: 'none' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '10px 20px',
-                          fontSize: '14px',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-secondary)',
-                          color: 'var(--text-secondary)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Upload size={16} />
-                        {t('token.harbor.selectFile')}
-                      </button>
-                      {getValue('harbor_tls_cert') && (
-                        <div style={{ marginTop: '8px', fontSize: '14px', color: 'var(--green-500)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <CheckCircle2 size={16} /> {t('token.harbor.certLoaded')}
+              {tokenId === 'harbor' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {getHarborConfigs().map((instance, idx) => {
+                    const status = harborTestStatuses[instance.id]
+                    return (
+                      <div key={instance.id} style={{ padding: '16px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>
+                            Harbor Instance {idx + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeHarborInstance(idx)}
+                            style={{ display: 'inline-flex', alignItems: 'center', padding: '4px', border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', borderRadius: 'var(--radius-xs)' }}
+                            title={t('settings.tokens.remove')}
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  )}
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                          <div style={{ flex: 1, minWidth: '200px' }}>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={instance.url || ''}
+                              onChange={e => updateHarborConfig(idx, 'url', e.target.value)}
+                              placeholder="https://harbor.example.com"
+                            />
+                          </div>
+                          <div style={{ flex: 1, minWidth: '200px' }}>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={instance.username || ''}
+                              onChange={e => updateHarborConfig(idx, 'username', e.target.value)}
+                              placeholder={t('token.harbor.usernamePlaceholder') || 'Username'}
+                            />
+                          </div>
+                          <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
+                            <input
+                              type={visiblePasswords[`harbor-${instance.id}`] ? 'text' : 'password'}
+                              className="form-control"
+                              value={instance.password || ''}
+                              onChange={e => updateHarborConfig(idx, 'password', e.target.value)}
+                              placeholder={t('token.harbor.passwordPlaceholder') || 'Password'}
+                              style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility(`harbor-${instance.id}`)}
+                              style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', padding: '4px', border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                            >
+                              {visiblePasswords[`harbor-${instance.id}`] ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: '12px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setCertExpanded(prev => ({ ...prev, [instance.id]: !prev[instance.id] }))}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 0',
+                              fontSize: '15px',
+                              border: 'none',
+                              background: 'transparent',
+                              color: 'var(--text-muted)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <ChevronDown
+                              size={16}
+                              style={{
+                                transform: certExpanded[instance.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s ease',
+                              }}
+                            />
+                            {t('token.harbor.tlsCert')} ({t('token.harbor.optional')})
+                            {instance.cert && !certExpanded[instance.id] && (
+                              <span style={{ color: 'var(--green-500)', fontSize: '13px', marginLeft: '4px' }}>
+                                <CheckCircle2 size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} />
+                                {t('token.harbor.certLoaded')}
+                              </span>
+                            )}
+                          </button>
+                          {certExpanded[instance.id] && (
+                            <div style={{ marginTop: '8px' }}>
+                              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setCertInputModes(prev => ({ ...prev, [instance.id]: 'paste' }))}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '10px 16px',
+                                    fontSize: '15px',
+                                    border: certInputModes[instance.id] !== 'upload' ? '1px solid var(--purple-600)' : '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    background: certInputModes[instance.id] !== 'upload' ? 'var(--accent-bg)' : 'var(--bg-tertiary)',
+                                    color: certInputModes[instance.id] !== 'upload' ? 'var(--purple-400)' : 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <FileText size={16} />
+                                  {t('token.harbor.paste')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCertInputModes(prev => ({ ...prev, [instance.id]: 'upload' }))}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '10px 16px',
+                                    fontSize: '15px',
+                                    border: certInputModes[instance.id] === 'upload' ? '1px solid var(--purple-600)' : '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    background: certInputModes[instance.id] === 'upload' ? 'var(--accent-bg)' : 'var(--bg-tertiary)',
+                                    color: certInputModes[instance.id] === 'upload' ? 'var(--purple-400)' : 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <Upload size={16} />
+                                  {t('token.harbor.upload')}
+                                </button>
+                              </div>
+                              {certInputModes[instance.id] === 'upload' ? (
+                                <div>
+                                  <input
+                                    type="file"
+                                    ref={el => { fileInputRefs.current[instance.id] = el }}
+                                    accept=".crt,.cer,.cert,.pem"
+                                    onChange={e => handleFileUpload(e, idx)}
+                                    style={{ display: 'none' }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => fileInputRefs.current[instance.id]?.click()}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      padding: '10px 20px',
+                                      fontSize: '15px',
+                                      border: '1px solid var(--border-color)',
+                                      borderRadius: 'var(--radius-sm)',
+                                      background: 'var(--bg-secondary)',
+                                      color: 'var(--text-secondary)',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    <Upload size={16} />
+                                    {t('token.harbor.selectFile')}
+                                  </button>
+                                  {instance.cert && (
+                                    <div style={{ marginTop: '8px', fontSize: '15px', color: 'var(--green-500)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <CheckCircle2 size={16} /> {t('token.harbor.certLoaded')}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <textarea
+                                  className="form-control"
+                                  value={instance.cert || ''}
+                                  onChange={e => updateHarborConfig(idx, 'cert', e.target.value)}
+                                  placeholder={t('token.harbor.certPlaceholder')}
+                                  rows={4}
+                                  style={{ fontSize: '14px', fontFamily: 'var(--font-mono)' }}
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <button
+                            type="button"
+                            onClick={() => testHarborInstance(idx)}
+                            disabled={status?.testing}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500',
+                              border: '1px solid var(--purple-600)', borderRadius: 'var(--radius-sm)', background: 'var(--accent-bg)', color: 'var(--purple-400)',
+                              cursor: status?.testing ? 'not-allowed' : 'pointer', opacity: status?.testing ? 0.6 : 1,
+                            }}
+                          >
+                            {status?.testing ? <Loader2 size={14} className="spin" /> : <CheckCircle2 size={14} />}
+                            {status?.testing ? t('settings.testing') : t('settings.test')}
+                          </button>
+                          {status && !status.testing && (
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: status.success ? 'var(--green-500)' : 'var(--red-500)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {status.success ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                              {status.message}
+                            </span>
+                          )}
+                          {instance.verified && !status?.testing && (
+                            <span style={{ fontSize: '13px', color: 'var(--green-500)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <ShieldCheck size={12} /> {t('settings.tokens.verified')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <button
+                    type="button"
+                    onClick={addHarborInstance}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', fontSize: '14px',
+                      border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)',
+                      color: 'var(--text-secondary)', cursor: 'pointer',
+                    }}
+                  >
+                    <Plus size={14} /> {t('settings.tokens.addHarborInstance') || 'Add Harbor Instance'}
+                  </button>
                 </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {registry.fields.map(field => (
+                      <div key={field.key} style={{ position: 'relative', flex: registry.fields.length > 1 ? 1 : undefined, minWidth: '200px' }}>
+                        <input
+                          type={field.type === 'password' && !visiblePasswords[field.key] ? 'password' : 'text'}
+                          className="form-control"
+                          value={getValue(field.key) || ''}
+                          onChange={e => setFormData({ ...formData, [field.key]: e.target.value })}
+                          placeholder={field.placeholder}
+                          style={{ paddingRight: field.type === 'password' ? '40px' : undefined }}
+                        />
+                        {field.type === 'password' && (
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility(field.key)}
+                            style={{
+                              position: 'absolute',
+                              right: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              padding: '4px',
+                              border: 'none',
+                              background: 'transparent',
+                              color: 'var(--text-muted)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title={visiblePasswords[field.key] ? t('settings.hide') : t('settings.show')}
+                          >
+                            {visiblePasswords[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => testConnection(tokenId)}
+                      disabled={testStatuses[tokenId]?.testing}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 20px',
+                        fontSize: '15px',
+                        fontWeight: '500',
+                        border: registry.requireTest ? '1px solid var(--purple-600)' : '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-sm)',
+                        background: registry.requireTest ? 'var(--accent-bg)' : 'var(--bg-secondary)',
+                        color: registry.requireTest ? 'var(--purple-400)' : 'var(--text-primary)',
+                        cursor: testStatuses[tokenId]?.testing ? 'not-allowed' : 'pointer',
+                        opacity: testStatuses[tokenId]?.testing ? 0.6 : 1,
+                      }}
+                    >
+                      {testStatuses[tokenId]?.testing ? (
+                        <Loader2 size={16} className="spin" />
+                      ) : (
+                        <CheckCircle2 size={16} />
+                      )}
+                      {testStatuses[tokenId]?.testing ? t('settings.testing') : t('settings.test')}
+                    </button>
+                    {testStatuses[tokenId] && !testStatuses[tokenId].testing && (
+                      <div style={{
+                        fontSize: '15px',
+                        fontWeight: '500',
+                        color: testStatuses[tokenId].success ? 'var(--green-500)' : 'var(--red-500)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                      }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {testStatuses[tokenId].success ? (
+                            <CheckCircle2 size={16} />
+                          ) : (
+                            <XCircle size={16} />
+                          )}
+                          {testStatuses[tokenId].message}
+                        </span>
+                        {!testStatuses[tokenId].success && tokenId === 'dockerhub' && testStatuses[tokenId].errorType === 'docker_unavailable' && (
+                          <div style={{
+                            padding: '12px 16px',
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--border-color)',
+                            fontSize: '14px',
+                            color: 'var(--text-secondary)',
+                            fontWeight: '400',
+                            lineHeight: '1.5',
+                          }}>
+                            <div style={{ marginBottom: '8px', fontWeight: '500', color: 'var(--text-primary)' }}>
+                              {t('settings.tokens.dockerUnavailableHint') || 'Cannot verify Docker Hub credentials'}
+                            </div>
+                            <ul style={{ margin: '0 0 10px 16px', padding: 0 }}>
+                              <li>{t('settings.tokens.checkLocalDocker') || 'Check if Docker Desktop or Podman is running locally'}</li>
+                              <li>{t('settings.tokens.configureDockerHost') || 'Or configure a remote Docker host in Export Settings'}</li>
+                            </ul>
+                            {onSwitchTab && (
+                              <button
+                                type="button"
+                                onClick={() => onSwitchTab('export')}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '8px 16px',
+                                  fontSize: '14px',
+                                  fontWeight: '500',
+                                  border: '1px solid var(--purple-600)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  background: 'var(--accent-bg)',
+                                  color: 'var(--purple-400)',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <ArrowRightFromLine size={14} />
+                                {t('settings.tokens.goToExportSettings') || 'Go to Export Settings'}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {registry.requireTest && !verifiedTokens[tokenId] && !testStatuses[tokenId]?.testing && (
+                      <span style={{
+                        fontSize: '13px',
+                        color: 'var(--orange-500)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}>
+                        <Info size={12} />
+                        {t('settings.tokens.mustVerify')}
+                      </span>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </SettingRow>
@@ -554,7 +860,7 @@ label={
             justifyContent: 'space-between',
             marginBottom: '12px'
           }}>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
               {t('settings.tokens.select')}
             </div>
             <button
@@ -593,7 +899,7 @@ style={{
                     background: 'var(--bg-secondary)',
                     color: 'var(--text-primary)',
                     cursor: 'pointer',
-                    fontSize: '14px',
+                    fontSize: '15px',
                     textAlign: 'left',
                   }}
                 >
@@ -603,7 +909,7 @@ style={{
                   </div>
                   {registry.requireTest && (
                     <span style={{
-                      fontSize: '11px',
+                      fontSize: '12px',
                       color: 'var(--orange-500)',
                       padding: '2px 8px',
                       borderRadius: 'var(--radius-xs)',
@@ -616,7 +922,7 @@ style={{
               )
             })}
             {getAvailableTokens().length === 0 && (
-              <div style={{ padding: '8px', color: 'var(--text-muted)', fontSize: '13px' }}>
+              <div style={{ padding: '8px', color: 'var(--text-muted)', fontSize: '14px' }}>
                 {t('settings.tokens.allConfigured')}
               </div>
             )}
@@ -633,7 +939,7 @@ style={{
              alignItems: 'center',
              gap: '6px',
              padding: '8px 16px',
-             fontSize: '13px',
+             fontSize: '14px',
              border: '1px solid var(--border-color)',
              borderRadius: 'var(--radius-xs)',
              background: 'var(--bg-secondary)',

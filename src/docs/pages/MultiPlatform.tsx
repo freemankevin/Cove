@@ -8,7 +8,7 @@ export default function MultiPlatform() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '多平台支持 - DockerPull 文档' : 'Multi-Platform - DockerPull Documentation'
+    document.title = language === 'zh' ? '多平台支持 - Cove 文档' : 'Multi-Platform - Cove Documentation'
   }, [language])
 
   return (

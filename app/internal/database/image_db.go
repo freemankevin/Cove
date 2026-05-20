@@ -2,7 +2,7 @@ package database
 
 import (
 	"database/sql"
-	"docker-pull-manager/internal/models"
+	"cove/internal/models"
 )
 
 func CreateImage(db *sql.DB, image *models.Image) error {

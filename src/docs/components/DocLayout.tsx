@@ -9,7 +9,7 @@ import './DocLayout.css'
 export default function DocLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('dockpull-theme')
+    const saved = localStorage.getItem('cove-theme')
     if (saved === 'dark' || saved === 'light') {
       return saved === 'dark'
     }
@@ -29,7 +29,7 @@ export default function DocLayout() {
     const newMode = !isDarkMode
     setIsDarkMode(newMode)
     const theme = newMode ? 'dark' : 'light'
-    localStorage.setItem('dockpull-theme', theme)
+    localStorage.setItem('cove-theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
   }
 
@@ -49,7 +49,7 @@ export default function DocLayout() {
           {/* Left - Logo (visible on mobile) */}
           <div className="doc-header-left">
             <a href="/docs" className="doc-logo-mobile">
-              <img src="/logo.png" alt="DockerPull" className="doc-logo-img" />
+              <img src="/logo.png" alt="Cove" className="doc-logo-img" />
               <span className="doc-logo-text">Docs</span>
             </a>
           </div>
@@ -88,7 +88,7 @@ export default function DocLayout() {
 
             {/* GitHub */}
             <a
-              href="https://github.com/freemankevin/DockerPull"
+              href="https://github.com/freemankevin/Cove"
               target="_blank"
               rel="noopener noreferrer"
               className="doc-header-link"
@@ -126,7 +126,7 @@ export default function DocLayout() {
           {/* Logo */}
           <div className="doc-sidebar-logo">
             <a href="/docs" className="doc-logo">
-              <img src="/logo.png" alt="DockerPull" className="doc-logo-img" />
+              <img src="/logo.png" alt="Cove" className="doc-logo-img" />
               <span className="doc-logo-divider" />
               <span className="doc-logo-text">Docs</span>
             </a>

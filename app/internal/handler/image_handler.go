@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"docker-pull-manager/internal/models"
+	"cove/internal/models"
 	"net/http"
 	"strconv"
 	"strings"

@@ -161,7 +161,7 @@ export default function Images() {
               color: 'var(--text-tertiary)',
               borderRadius: '20px',
               padding: '2px 8px',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 500,
             }}>
               {images.length}
@@ -216,7 +216,7 @@ export default function Images() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         <span className="image-name" style={{
-                          fontSize: '13px',
+                          fontSize: '14px',
                           color: 'var(--text-primary)',
                           fontWeight: 500,
                         }}>
@@ -229,7 +229,7 @@ export default function Images() {
                   <td><PlatformBadge platform={img.platform} /></td>
                   <td><StatusBadge status={img.status} /></td>
                   <td>
-                    <span style={{ color: img.retry_count > 0 ? 'var(--yellow-500)' : 'var(--text-muted)', fontSize: '13px' }}>
+                    <span style={{ color: img.retry_count > 0 ? 'var(--yellow-500)' : 'var(--text-muted)', fontSize: '14px' }}>
                       {img.retry_count}
                     </span>
                   </td>
@@ -240,16 +240,16 @@ export default function Images() {
                         alignItems: 'center',
                         gap: '4px',
                         color: 'var(--green-500)',
-                        fontSize: '13px',
+                        fontSize: '14px',
                       }}>
                         <CheckCircle size={12} />
                         {t('images.exported')}
                       </span>
                     ) : (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>—</span>
                     )}
                   </td>
-                  <td style={{ color: 'var(--text-tertiary)', fontSize: '12.5px' }}>
+                  <td style={{ color: 'var(--text-tertiary)', fontSize: '13.5px' }}>
                     {new Date(img.created_at).toLocaleString('en-US', {
                       month: 'short',
                       day: 'numeric',

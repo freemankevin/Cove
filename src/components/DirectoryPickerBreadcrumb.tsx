@@ -39,7 +39,7 @@ style={{
                color: index === breadcrumbs.length - 1
                  ? 'var(--text-primary)'
                  : '#8b5cf6',
-               fontSize: '13px',
+               fontSize: '14px',
                padding: '4px 4px',
                borderRadius: 'var(--radius-xs)',
                fontWeight: index === breadcrumbs.length - 1 ? 500 : 400,

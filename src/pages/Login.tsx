@@ -49,7 +49,7 @@ export default function Login() {
               {t('login.brandDesc')}
             </p>
           </div>
-          <div className="login-version">© 2026 DockerPull — v2.4.1</div>
+          <div className="login-version">© 2026 Cove — v2.4.1</div>
         </div>
         <div className="login-dots">
           {Array.from({ length: 25 }).map((_, i) => <span key={i} />)}
@@ -70,7 +70,7 @@ export default function Login() {
             <div className="login-field">
               <label htmlFor="username">{t('login.username')}</label>
               <div className="login-input-wrapper">
-                <User size={16} className="login-input-icon" />
+                <User size={18} className="login-input-icon" />
                 <input
                   type="text"
                   id="username"
@@ -86,7 +86,7 @@ export default function Login() {
             <div className="login-field">
               <label htmlFor="password">{t('login.password')}</label>
               <div className="login-input-wrapper">
-                <Lock size={16} className="login-input-icon" />
+                <Lock size={18} className="login-input-icon" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
@@ -103,7 +103,7 @@ export default function Login() {
                   tabIndex={-1}
                   aria-label="Toggle password visibility"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>

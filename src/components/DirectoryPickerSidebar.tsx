@@ -28,7 +28,7 @@ style={{
          border: 'none',
          background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
          color: isActive ? '#8b5cf6' : 'var(--text-secondary)',
-         fontSize: '13px',
+         fontSize: '14px',
          cursor: 'pointer',
          transition: 'all 0.15s',
          textAlign: 'left',

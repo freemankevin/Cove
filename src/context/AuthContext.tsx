@@ -31,7 +31,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('dockpull_user')
+    const stored = localStorage.getItem('cove_user')
     if (stored) {
       try {
         return JSON.parse(stored)
@@ -46,22 +46,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null)
-    localStorage.removeItem('dockpull_token')
-    localStorage.removeItem('dockpull_user')
-    localStorage.removeItem('dockpull_config')
+    localStorage.removeItem('cove_token')
+    localStorage.removeItem('cove_user')
+    localStorage.removeItem('cove_config')
   }, [])
 
   useEffect(() => {
     if (user) {
-      localStorage.setItem('dockpull_user', JSON.stringify(user))
+      localStorage.setItem('cove_user', JSON.stringify(user))
     } else {
-      localStorage.removeItem('dockpull_user')
-      localStorage.removeItem('dockpull_token')
-      localStorage.removeItem('dockpull_config')
+      localStorage.removeItem('cove_user')
+      localStorage.removeItem('cove_token')
+      localStorage.removeItem('cove_config')
     }
   }, [user])
 
-  const getToken = () => localStorage.getItem('dockpull_token')
+  const getToken = () => localStorage.getItem('cove_token')
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
@@ -76,11 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json()
-      localStorage.setItem('dockpull_token', data.token)
+      localStorage.setItem('cove_token', data.token)
       setUser({
         id: data.user.id,
         username: data.user.username,
-        avatar: localStorage.getItem('dockpull_avatar') || DEFAULT_AVATAR
+        avatar: localStorage.getItem('cove_avatar') || DEFAULT_AVATAR
       })
       return true
     } catch {
@@ -92,12 +92,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const updatedUser = { ...user, avatar }
       setUser(updatedUser)
-      localStorage.setItem('dockpull_avatar', avatar)
+      localStorage.setItem('cove_avatar', avatar)
     }
   }
 
   useEffect(() => {
-    const storedAvatar = localStorage.getItem('dockpull_avatar')
+    const storedAvatar = localStorage.getItem('cove_avatar')
     if (storedAvatar && user) {
       setUser(prev => prev ? { ...prev, avatar: storedAvatar } : null)
     }

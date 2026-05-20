@@ -2,8 +2,8 @@ package handler
 
 import (
 	"context"
-	"docker-pull-manager/internal/database"
-	"docker-pull-manager/internal/models"
+	"cove/internal/database"
+	"cove/internal/models"
 	"fmt"
 	"net/http"
 	"time"
@@ -84,7 +84,7 @@ func (h *Handler) DeleteLocalImage(c *gin.Context) {
 	for _, img := range images {
 		if img.ID == imageID {
 			repoTag = img.Repository + ":" + img.Tag
-			arch = img.Architecture
+			arch = img.Platform
 			break
 		}
 	}
@@ -141,7 +141,7 @@ func (h *Handler) ExportLocalImage(c *gin.Context) {
 	for _, img := range images {
 		if img.ID == imageID {
 			repoTag = img.Repository + ":" + img.Tag
-			architecture = img.Architecture
+			architecture = img.Platform
 			break
 		}
 	}

@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Trash2, Download, RefreshCw, AlertTriangle, Clock } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Trash2, Download, RefreshCw, AlertTriangle, Clock, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { localImagesApi, operationsApi } from '../api'
 import { useLanguage } from '../context/LanguageContext'
 import { useToast } from '../context/ToastContext'
 import { useNotification } from '../context/NotificationContext'
 import { useConfig } from '../context/ConfigContext'
-import { RegistryIcon, PlatformBadge } from '../components/ImageComponents'
+import { RegistryIcon, PlatformBadge, TokenRegistryIcon } from '../components/ImageComponents'
 import { ExpandableText } from '../components/LogComponents'
 import { detectRegistry } from '../utils/imageUtils'
 import type { LocalImage } from '../types'
@@ -38,8 +39,12 @@ export default function LocalImages() {
   const [exporting, setExporting] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+  const hasShownInitialError = useRef(false)
+  const isFetchingRef = useRef(false)
 
   const fetchImages = useCallback(async (isInitial = false) => {
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
     if (isInitial) {
       addNotification('info', 'Loading local images...')
     }
@@ -69,13 +74,15 @@ export default function LocalImages() {
         addNotification('success', `Loaded ${uniqueImages.length} local images`)
       }
     } catch (err: any) {
-      if (isInitial) {
+      if (isInitial && !hasShownInitialError.current) {
+        hasShownInitialError.current = true
         const errorMsg = err.response?.data?.error || err.message || 'Unknown error'
         addNotification('error', `Failed to load local images: ${errorMsg}`)
         showToast('error', t('localImages.loadFailed'))
       }
     } finally {
       setLoading(false)
+      isFetchingRef.current = false
     }
   }, [showToast, t, addNotification])
 
@@ -152,7 +159,7 @@ export default function LocalImages() {
               color: 'var(--text-tertiary)',
               borderRadius: 'var(--radius-card)',
               padding: '2px 8px',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 500,
             }}>
               {images.length}
@@ -182,13 +189,13 @@ export default function LocalImages() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
               <AlertTriangle size={48} style={{ color: 'var(--orange-500)' }} />
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                <div style={{ fontSize: '17px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>
                   {t('localImages.busy.title')}
                 </div>
-                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                   {busyMessage}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '14px' }}>
                   <Clock size={14} />
                   {t('localImages.busy.autoRetry')}
                 </div>
@@ -210,7 +217,7 @@ export default function LocalImages() {
             <thead>
               <tr>
                 <th>{t('localImages.table.image')}</th>
-                <th>{t('localImages.table.arch')}</th>
+                <th>{t('localImages.table.platform')}</th>
                 <th>{t('localImages.table.size')}</th>
                 <th>{t('localImages.table.created')}</th>
                 <th style={{ textAlign: 'right' }}>{t('localImages.table.actions')}</th>
@@ -245,24 +252,24 @@ export default function LocalImages() {
                     </div>
                   </td>
                   <td>
-                    <PlatformBadge platform={`linux/${img.architecture}`} />
+                    <PlatformBadge platform={`linux/${img.platform}`} />
                   </td>
                   <td>
                     <span style={{
                       color: 'var(--text-secondary)',
-                      fontSize: '13px',
+                      fontSize: '14px',
                     }}>
                       {formatSize(img.size)}
                     </span>
                   </td>
-                  <td style={{ color: 'var(--text-tertiary)', fontSize: '12.5px' }}>
+                  <td style={{ color: 'var(--text-tertiary)', fontSize: '13.5px' }}>
                     {formatDate(img.created_at)}
                   </td>
                   <td>
                     <div className="flex gap-2" style={{ justifyContent: 'flex-end' }}>
                       <button
                         className="btn btn-sm btn-success"
-                        onClick={() => handleExport(img.id, `${img.repository}:${img.tag}`, img.architecture)}
+                        onClick={() => handleExport(img.id, `${img.repository}:${img.tag}`, img.platform)}
                         disabled={exporting === img.id}
                         title={t('localImages.export')}
                       >
@@ -274,7 +281,7 @@ export default function LocalImages() {
                       </button>
                       <button
                         className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(img.id, `${img.repository}:${img.tag}`, img.architecture)}
+                        onClick={() => handleDelete(img.id, `${img.repository}:${img.tag}`, img.platform)}
                         disabled={deleting === img.id}
                         title={t('localImages.delete')}
                       >
@@ -295,17 +302,26 @@ export default function LocalImages() {
         <div className="empty-state-wrapper">
           <div className="empty-state">
             <div className="empty-state-icon-grid">
-              <div className="icon-cell">
-                <svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.186v1.887c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.186v1.887c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.186v1.887a.185.185 0 00.185.185m-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.185-.186H5.136a.186.186 0 00-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.186.186 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.184.184 0 00-.184.186v1.887c0 .102.083.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 00-.75.748 11.376 11.376 0 00.692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 003.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288z" fill="#2496ED"/>
-                </svg>
-              </div>
+              {['dockerhub', 'ghcr', 'quay', 'acr', 'ecr', 'gar', 'harbor', 'tencentcloud', 'huaweicloud'].map((id) => (
+                <div key={id} className="icon-cell">
+                  <TokenRegistryIcon tokenId={id} />
+                </div>
+              ))}
             </div>
             <div className="empty-state-content">
               <div className="empty-state-title">{t('localImages.empty.title')}</div>
               <div className="empty-state-description">
                 {t('localImages.empty.desc')}
               </div>
+              <div className="empty-state-tags" style={{ marginBottom: '16px' }}>
+                {['Docker Hub', 'GHCR', 'Quay', 'ACR', 'ECR', 'GAR'].map((tag) => (
+                  <span key={tag} className="empty-state-tag">{tag}</span>
+                ))}
+              </div>
+              <Link to="/images" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                {t('localImages.empty.action')}
+                <ArrowRight size={14} />
+              </Link>
             </div>
           </div>
         </div>

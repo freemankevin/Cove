@@ -29,7 +29,7 @@ export default function WebhookSettings({ getValue, setFormData }: WebhookSettin
               boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
             }} />
           </div>
-          <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+          <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>
             {getValue('enable_webhook') ? t('settings.webhook.enabled') : t('settings.webhook.disabled')}
           </span>
         </label>

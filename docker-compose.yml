@@ -1,17 +1,29 @@
 services:
   app:
-    image: ghcr.io/freemankevin/dockpull:latest
+    image: ghcr.io/freemankevin/cove:latest
     build:
       context: .
     ports:
       - "19238:9238"
     volumes:
+      # Linux/macOS: mount local Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
+      # Windows + WSL2: use the WSL2 Docker socket instead
+      # - //wsl$/Ubuntu/var/run/docker.sock:/var/run/docker.sock
       - ./data:/app/data
       - ./exports:/app/exports
     environment:
+      # Default: Unix socket for Linux/macOS containers
       - DOCKER_HOST=unix:///var/run/docker.sock
+      # Windows + WSL2 Docker Engine: set to WSL2 Docker socket or TCP
+      # - DOCKER_HOST=tcp://host.docker.internal:2375
       - SERVER_HOST=0.0.0.0
+      # Proxy settings (required in some regions to access Docker Hub / GHCR)
+      # If you use Clash/V2Ray on the host, use host.docker.internal (macOS/Linux)
+      # On Windows Docker Desktop, you may need the host LAN IP instead
+      # - HTTP_PROXY=http://host.docker.internal:7890
+      # - HTTPS_PROXY=http://host.docker.internal:7890
+      # - NO_PROXY=localhost,127.0.0.1
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9238/api/stats"]

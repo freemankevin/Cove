@@ -53,6 +53,12 @@ export default function Settings() {
     const checkKeys = checkKeysMap[tokenId]
     if (!checkKeys) return false
     const data = configData || config
+    if (tokenId === 'harbor') {
+      const harborConfigs = (data as Record<string, any>)?.harbor_configs
+      if (Array.isArray(harborConfigs) && harborConfigs.length > 0) {
+        return true
+      }
+    }
     return checkKeys.some(key => {
       const value = (data as Record<string, any>)?.[key]
       return value && String(value).trim() !== ''
@@ -77,6 +83,13 @@ export default function Settings() {
         huaweicloud: 'huaweicloud_verified',
       }
       for (const tokenId of configuredTokens) {
+        if (tokenId === 'harbor') {
+          const harborConfigs = (config as Record<string, any>)?.harbor_configs as any[] | undefined
+          if (Array.isArray(harborConfigs) && harborConfigs.length > 0 && harborConfigs.every((hc: any) => hc.verified)) {
+            initialVerified[tokenId] = true
+          }
+          continue
+        }
         const field = verifiedFields[tokenId]
         if (field && (config as Record<string, any>)?.[field]) {
           initialVerified[tokenId] = true
@@ -97,19 +110,31 @@ export default function Settings() {
       for (const tokenId of visibleTokens) {
         const registry = TOKEN_REGISTRY_CONFIG[tokenId]
         if (!registry?.requireTest) continue
-        
+
+        if (tokenId === 'harbor') {
+          const harborConfigs = (formData.harbor_configs !== undefined ? formData.harbor_configs : config?.harbor_configs) as any[] | undefined
+          if (Array.isArray(harborConfigs) && harborConfigs.length > 0) {
+            const unverified = harborConfigs.find((hc: any) => !hc.verified)
+            if (unverified) {
+              showToast('error', t('settings.tokens.mustVerifyFirst') + ': Harbor (' + (unverified.url || 'unnamed') + ')')
+              return
+            }
+          }
+          continue
+        }
+
         const fields = registry.checkKeys
         const hasValue = fields.some(key => {
           const val = formData[key] !== undefined ? formData[key] : (config as Record<string, any>)?.[key]
           return val && String(val).trim() !== ''
         })
-        
+
         if (hasValue && !verifiedTokens[tokenId]) {
           showToast('error', t('settings.tokens.mustVerifyFirst') + ': ' + registry.name)
           return
         }
       }
-      
+
       const verifiedFields: Record<TokenRegistryId, string> = {
         dockerhub: 'dockerhub_verified',
         ghcr: 'ghcr_verified',
@@ -309,6 +334,7 @@ export default function Settings() {
                 setShowAddToken={setShowAddToken}
                 verifiedTokens={verifiedTokens}
                 setVerifiedTokens={setVerifiedTokens}
+                onSwitchTab={(tab) => setActiveTab(tab as TabId)}
               />
             )}
 

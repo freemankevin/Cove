@@ -8,7 +8,7 @@ export default function Installation() {
   const { t, language } = useLanguage()
   
   useEffect(() => {
-    document.title = language === 'zh' ? '安装 - DockerPull 文档' : 'Installation - DockerPull Documentation'
+    document.title = language === 'zh' ? '安装 - Cove 文档' : 'Installation - Cove Documentation'
   }, [language])
 
   return (
@@ -33,9 +33,9 @@ export default function Installation() {
           code={`version: '3.8'
 
 services:
-  dockpull:
-    image: dockpull:latest
-    container_name: dockpull
+  cove:
+    image: cove:latest
+    container_name: cove
     ports:
       - "8080:8080"
     volumes:
@@ -107,7 +107,7 @@ services:
           </div>
           <div className="doc-file-tree-line">
             <span>│   └── </span>
-            <span className="doc-file-tree-file">dockpull.db</span>
+            <span className="doc-file-tree-file">cove.db</span>
             <span className="doc-file-tree-comment">{t('docs.installation.dir.comment2')}</span>
           </div>
           <div className="doc-file-tree-line">
@@ -143,13 +143,13 @@ services:
           title="Terminal"
           language="Bash"
           code={`docker run -d \\
-  --name dockpull \\
+  --name cove \\
   -p 8080:8080 \\
   -v $(pwd)/data:/app/data \\
   -v $(pwd)/exports:/app/exports \\
   -e SECRET_KEY=your-secret-key \\
   -e ADMIN_PASSWORD=your-password \\
-  dockpull:latest`}
+  cove:latest`}
         />
 
         <h2>{t('docs.installation.access.title')}</h2>
