@@ -54,20 +54,20 @@ func (h *Handler) ComposeUp(c *gin.Context) {
 
 	h.logComposeAction("COMPOSE_UP_START", "Starting compose project at "+projectPath)
 
-	err := h.dockerService.ComposeUp(ctx, projectPath)
+	output, err := h.dockerService.ComposeUp(ctx, projectPath)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			h.logComposeAction("COMPOSE_UP_FAILED", "Timeout starting "+projectPath)
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: compose up took too long"})
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: compose up took too long", "logs": output})
 			return
 		}
 		h.logComposeAction("COMPOSE_UP_FAILED", "Failed to start "+projectPath+": "+err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "logs": output})
 		return
 	}
 
 	h.logComposeAction("COMPOSE_UP_SUCCESS", "Successfully started "+projectPath)
-	c.JSON(http.StatusOK, gin.H{"message": "started"})
+	c.JSON(http.StatusOK, gin.H{"message": "started", "logs": output})
 }
 
 func (h *Handler) ComposeDown(c *gin.Context) {
@@ -82,20 +82,20 @@ func (h *Handler) ComposeDown(c *gin.Context) {
 
 	h.logComposeAction("COMPOSE_DOWN_START", "Stopping compose project at "+projectPath)
 
-	err := h.dockerService.ComposeDown(ctx, projectPath)
+	output, err := h.dockerService.ComposeDown(ctx, projectPath)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			h.logComposeAction("COMPOSE_DOWN_FAILED", "Timeout stopping "+projectPath)
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: compose down took too long"})
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: compose down took too long", "logs": output})
 			return
 		}
 		h.logComposeAction("COMPOSE_DOWN_FAILED", "Failed to stop "+projectPath+": "+err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "logs": output})
 		return
 	}
 
 	h.logComposeAction("COMPOSE_DOWN_SUCCESS", "Successfully stopped "+projectPath)
-	c.JSON(http.StatusOK, gin.H{"message": "stopped"})
+	c.JSON(http.StatusOK, gin.H{"message": "stopped", "logs": output})
 }
 
 func (h *Handler) ComposeStatus(c *gin.Context) {
@@ -118,4 +118,13 @@ func (h *Handler) ComposeStatus(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, services)
+}
+
+func (h *Handler) GetComposeLogs(c *gin.Context) {
+	logs, err := database.GetImageLogs(h.db, ComposeLogID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, logs)
 }

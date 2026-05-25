@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"cove/internal/config"
 	"encoding/base64"
@@ -49,27 +51,30 @@ func (s *DockerService) ResetClient() {
 
 func (s *DockerService) getClient() (*client.Client, error) {
 	s.cliOnce.Do(func() {
-		// Build a list of candidate hosts to try, in order of preference
+		// Priority: local docker > local podman > configured remote hosts.
+		// Local runtimes are always tried first regardless of DockerHost config.
 		candidates := []string{}
 
-		if s.cfg.ContainerRuntime == "podman" {
-			if podmanHost := detectPodmanSocket(); podmanHost != "" {
-				candidates = append(candidates, podmanHost)
-			}
+		// 1. Local Docker
+		if runtime.GOOS == "windows" {
+			candidates = append(candidates, "npipe:////./pipe/docker_engine")
+		} else {
+			candidates = append(candidates, "unix:///var/run/docker.sock")
 		}
 
-		if host := os.Getenv("CONTAINER_HOST"); host != "" {
-			candidates = append(candidates, host)
+		// 2. Local Podman
+		if podmanHost := detectPodmanSocket(); podmanHost != "" {
+			candidates = append(candidates, podmanHost)
 		}
 
+		// 3. Configured / remote hosts (lowest priority)
 		if s.cfg.DockerHost != "" {
 			candidates = append(candidates, s.cfg.DockerHost)
 		}
-
+		if host := os.Getenv("CONTAINER_HOST"); host != "" {
+			candidates = append(candidates, host)
+		}
 		if runtime.GOOS == "windows" {
-			// Try Docker Desktop named pipe first
-			candidates = append(candidates, "npipe:////./pipe/docker_engine")
-			// Then try WSL2 TCP
 			if wslHost := detectWSL2Docker(); wslHost != "" {
 				candidates = append(candidates, wslHost)
 			}
@@ -77,19 +82,13 @@ func (s *DockerService) getClient() (*client.Client, error) {
 
 		var lastErr error
 		for _, host := range candidates {
-			opts := []client.Opt{client.WithAPIVersionNegotiation()}
-			if host != "" {
-				opts = append(opts, client.WithHost(host))
-			}
-			opts = append(opts, client.FromEnv)
-
+			opts := []client.Opt{client.WithAPIVersionNegotiation(), client.WithHost(host)}
 			cli, err := client.NewClientWithOpts(opts...)
 			if err != nil {
 				lastErr = err
 				continue
 			}
 
-			// Test connectivity with a short timeout
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			_, err = cli.Ping(ctx)
 			cancel()
@@ -103,8 +102,6 @@ func (s *DockerService) getClient() (*client.Client, error) {
 			lastErr = err
 		}
 
-		// All candidates failed; do not fallback to a default client on Windows
-		// because it will silently pick the non-existent Docker Desktop named pipe.
 		if lastErr != nil {
 			s.cliErr = lastErr
 		} else {
@@ -810,25 +807,131 @@ func (s *DockerService) ExportLocalImage(ctx context.Context, repoTag string, ar
 
 // ── Build ──
 
-func (s *DockerService) BuildImage(ctx context.Context, dockerfilePath, tag string, buildArgs map[string]string) error {
-	runtimeCmd := "docker"
-	if s.cfg.ContainerRuntime != "" {
-		runtimeCmd = s.cfg.ContainerRuntime
-	}
-
-	args := []string{"build", "-t", tag, "-f", dockerfilePath}
-	for k, v := range buildArgs {
-		args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, v))
-	}
-	contextDir := filepath.Dir(dockerfilePath)
-	args = append(args, contextDir)
-
-	cmd := exec.CommandContext(ctx, runtimeCmd, args...)
-	output, err := cmd.CombinedOutput()
+func (s *DockerService) BuildImage(ctx context.Context, contextDir, dockerfilePath, tag string, buildArgs map[string]string) (string, error) {
+	cli, err := s.getClient()
 	if err != nil {
-		return fmt.Errorf("build failed: %v\nOutput: %s", err, string(output))
+		return "", fmt.Errorf("docker client error: %w", err)
 	}
-	return nil
+
+	var dockerfileRel string
+	if contextDir != "" {
+		dockerfilePath = filepath.Clean(dockerfilePath)
+		contextDir = filepath.Clean(contextDir)
+		if strings.HasPrefix(dockerfilePath, contextDir+string(filepath.Separator)) {
+			dockerfileRel = strings.TrimPrefix(dockerfilePath, contextDir+string(filepath.Separator))
+		} else {
+			dockerfileRel = filepath.Base(dockerfilePath)
+		}
+	} else {
+		contextDir = filepath.Dir(dockerfilePath)
+		dockerfileRel = filepath.Base(dockerfilePath)
+	}
+
+	tarBuf, err := createBuildContext(contextDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to create build context from %s: %w", contextDir, err)
+	}
+
+	buildArgStrings := make(map[string]*string)
+	for k, v := range buildArgs {
+		val := v
+		buildArgStrings[k] = &val
+	}
+
+	options := types.ImageBuildOptions{
+		Dockerfile: dockerfileRel,
+		Tags:       []string{tag},
+		BuildArgs:  buildArgStrings,
+		Remove:     true,
+		ForceRemove: true,
+	}
+
+	resp, err := cli.ImageBuild(ctx, tarBuf, options)
+	if err != nil {
+		return "", fmt.Errorf("image build API error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var buf strings.Builder
+	buf.WriteString(fmt.Sprintf("► Building %s from %s (context: %s)\n", tag, dockerfileRel, contextDir))
+
+	dec := json.NewDecoder(resp.Body)
+	for {
+		var msg map[string]interface{}
+		if err := dec.Decode(&msg); err != nil {
+			if err == io.EOF {
+				break
+			}
+			buf.WriteString(fmt.Sprintf("\nERROR: failed to read build stream: %v\n", err))
+			break
+		}
+		if stream, ok := msg["stream"].(string); ok && stream != "" {
+			buf.WriteString(stream)
+		}
+		// Capture pull/push progress messages (common when base image is not cached)
+		if status, ok := msg["status"].(string); ok && status != "" {
+			line := status
+			if id, ok := msg["id"].(string); ok && id != "" {
+				line = "[" + id + "] " + line
+			}
+			if progress, ok := msg["progress"].(string); ok && progress != "" {
+				line += " " + progress
+			}
+			buf.WriteString(line + "\n")
+		}
+		if errMsg, ok := msg["error"].(string); ok && errMsg != "" {
+			buf.WriteString("ERROR: " + errMsg + "\n")
+		}
+		if errDetail, ok := msg["errorDetail"].(map[string]interface{}); ok {
+			if msg, ok := errDetail["message"].(string); ok {
+				buf.WriteString("ERROR: " + msg + "\n")
+			}
+		}
+	}
+
+	outStr := buf.String()
+	if strings.Contains(outStr, "ERROR:") {
+		return outStr, fmt.Errorf("build failed")
+	}
+	return outStr, nil
+}
+
+func createBuildContext(dir string) (io.Reader, error) {
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // skip files we can't read
+		}
+		if info.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		hdr, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
+		hdr.Name = filepath.ToSlash(rel)
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return nil // skip unreadable files
+		}
+		defer f.Close()
+		_, err = io.Copy(tw, f)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
 // ── Containers ──
@@ -1035,7 +1138,7 @@ func (s *DockerService) ListComposeProjects(ctx context.Context, scanPath string
 	return projects, nil
 }
 
-func (s *DockerService) ComposeUp(ctx context.Context, projectPath string) error {
+func (s *DockerService) ComposeUp(ctx context.Context, projectPath string) (string, error) {
 	runtimeCmd := "docker"
 	if s.cfg.ContainerRuntime != "" {
 		runtimeCmd = s.cfg.ContainerRuntime
@@ -1044,13 +1147,14 @@ func (s *DockerService) ComposeUp(ctx context.Context, projectPath string) error
 	cmd := exec.CommandContext(ctx, runtimeCmd, "compose", "-f", projectPath, "up", "-d")
 	cmd.Dir = filepath.Dir(projectPath)
 	output, err := cmd.CombinedOutput()
+	outStr := string(output)
 	if err != nil {
-		return fmt.Errorf("compose up failed: %v\nOutput: %s", err, string(output))
+		return outStr, fmt.Errorf("compose up failed: %v\nOutput: %s", err, outStr)
 	}
-	return nil
+	return outStr, nil
 }
 
-func (s *DockerService) ComposeDown(ctx context.Context, projectPath string) error {
+func (s *DockerService) ComposeDown(ctx context.Context, projectPath string) (string, error) {
 	runtimeCmd := "docker"
 	if s.cfg.ContainerRuntime != "" {
 		runtimeCmd = s.cfg.ContainerRuntime
@@ -1059,10 +1163,11 @@ func (s *DockerService) ComposeDown(ctx context.Context, projectPath string) err
 	cmd := exec.CommandContext(ctx, runtimeCmd, "compose", "-f", projectPath, "down")
 	cmd.Dir = filepath.Dir(projectPath)
 	output, err := cmd.CombinedOutput()
+	outStr := string(output)
 	if err != nil {
-		return fmt.Errorf("compose down failed: %v\nOutput: %s", err, string(output))
+		return outStr, fmt.Errorf("compose down failed: %v\nOutput: %s", err, outStr)
 	}
-	return nil
+	return outStr, nil
 }
 
 func (s *DockerService) ComposeStatus(ctx context.Context, projectPath string) ([]ComposeService, error) {

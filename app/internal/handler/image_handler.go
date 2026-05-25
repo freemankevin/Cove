@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"context"
 	"cove/internal/models"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -143,6 +146,88 @@ func (h *Handler) GetStats(c *gin.Context) {
 		"success": success,
 		"failed":  failed,
 		"pending": pending,
+	})
+}
+
+func (h *Handler) GetDockerInfo(c *gin.Context) {
+	rt := h.cfg.ContainerRuntime
+	if rt == "" {
+		rt = "docker"
+	}
+
+	dockerHost := h.cfg.DockerHost
+	if dockerHost == "" {
+		if rt == "podman" {
+			dockerHost = "local podman"
+		} else {
+			dockerHost = "local docker"
+		}
+	}
+
+	cli, err := h.dockerService.GetClient()
+	connected := err == nil && cli != nil
+
+	var version, apiVersion, os, arch string
+	if connected {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ver, err := cli.ServerVersion(ctx)
+		cancel()
+		if err == nil {
+			version = ver.Version
+			apiVersion = ver.APIVersion
+		}
+
+		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+		info, err := cli.Info(ctx)
+		cancel()
+		if err == nil {
+			os = info.OperatingSystem
+			arch = info.Architecture
+		}
+		if os == "" {
+			os = info.OSType
+		}
+	}
+	// Fallback: if daemon didn't report platform, use server OS/arch
+	if os == "" {
+		os = runtime.GOOS
+	}
+	if arch == "" {
+		arch = runtime.GOARCH
+	}
+
+	var localImages int
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	imgs, err := h.dockerService.ListLocalImages(ctx)
+	cancel()
+	if err == nil {
+		localImages = len(imgs)
+	}
+
+	var containersRunning, containersTotal int
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	containers, err := h.dockerService.ListContainers(ctx, true)
+	cancel()
+	if err == nil {
+		containersTotal = len(containers)
+		for _, ct := range containers {
+			if ct.State == "running" {
+				containersRunning++
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"runtime":            rt,
+		"docker_host":        dockerHost,
+		"connected":          connected,
+		"version":            version,
+		"api_version":        apiVersion,
+		"os":                 os,
+		"arch":               arch,
+		"local_images":       localImages,
+		"containers_running": containersRunning,
+		"containers_total":   containersTotal,
 	})
 }
 

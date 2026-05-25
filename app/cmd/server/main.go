@@ -229,17 +229,26 @@ func main() {
 		api.POST("/webhook/test", h.TestWebhook)
 		api.POST("/tokens/test", h.TestTokenAuth)
 		api.GET("/stats", h.GetStats)
+		api.GET("/docker-info", h.GetDockerInfo)
 
 		// Build routes
 		api.GET("/builds", h.ListBuilds)
 		api.POST("/builds", h.BuildImage)
 		api.DELETE("/builds/:id", h.DeleteBuild)
+		api.GET("/builds/logs", h.GetBuildLogs)
 
 		// Compose routes
 		api.GET("/compose", h.ListComposeProjects)
 		api.POST("/compose/up", h.ComposeUp)
 		api.POST("/compose/down", h.ComposeDown)
 		api.GET("/compose/status", h.ComposeStatus)
+		api.GET("/compose/logs", h.GetComposeLogs)
+
+		// File routes
+		api.GET("/files/read", h.ReadFile)
+		api.POST("/files/write", h.WriteFile)
+		api.GET("/files/list", h.ListFiles)
+		api.DELETE("/files/delete", h.DeleteFile)
 
 		// Container routes
 		api.GET("/containers", h.ListContainers)

@@ -93,6 +93,10 @@ export const statsApi = {
   get: () => api.get('/stats'),
 }
 
+export const dockerInfoApi = {
+  get: () => api.get('/docker-info'),
+}
+
 export const localImagesApi = {
   list: () => longTimeoutApi.get('/local-images'),
   delete: (id: string, force?: boolean) => longTimeoutApi.delete(`/local-images/${id}`, { params: { force } }),
@@ -105,8 +109,9 @@ export const operationsApi = {
 
 export const buildsApi = {
   list: () => longTimeoutApi.get('/builds'),
-  build: (data: any) => longTimeoutApi.post('/builds', data),
+  build: (data: any) => longTimeoutApi.post('/builds', data, { timeout: 600000 }), // 10 min for slow image pulls
   delete: (id: string, force?: boolean) => longTimeoutApi.delete(`/builds/${id}`, { params: { force } }),
+  logs: () => api.get('/builds/logs'),
 }
 
 export const composeApi = {
@@ -114,6 +119,7 @@ export const composeApi = {
   up: (path: string) => api.post('/compose/up', null, { params: { path } }),
   down: (path: string) => api.post('/compose/down', null, { params: { path } }),
   status: (path: string) => api.get('/compose/status', { params: { path } }),
+  logs: () => api.get('/compose/logs'),
 }
 
 export const containersApi = {
@@ -123,6 +129,13 @@ export const containersApi = {
   restart: (id: string, timeout?: number) => api.post(`/containers/${id}/restart`, null, { params: { timeout } }),
   remove: (id: string, force?: boolean) => api.delete(`/containers/${id}`, { params: { force } }),
   logs: (id: string, tail?: number) => api.get(`/containers/${id}/logs`, { params: { tail } }),
+}
+
+export const filesApi = {
+  read: (path: string) => api.get('/files/read', { params: { path } }),
+  write: (path: string, content: string) => api.post('/files/write', { path, content }),
+  list: (dir: string) => api.get('/files/list', { params: { dir } }),
+  delete: (path: string) => api.delete('/files/delete', { params: { path } }),
 }
 
 export default api

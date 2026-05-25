@@ -12,6 +12,7 @@ import (
 )
 
 type BuildImageRequest struct {
+	ContextDir     string            `json:"context_dir"`
 	DockerfilePath string            `json:"dockerfile_path" binding:"required"`
 	Tag            string            `json:"tag" binding:"required"`
 	BuildArgs      map[string]string `json:"build_args"`
@@ -51,25 +52,25 @@ func (h *Handler) BuildImage(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Second)
 	defer cancel()
 
 	h.logBuildAction("BUILD_START", fmt.Sprintf("Building %s from %s", req.Tag, req.DockerfilePath))
 
-	err := h.dockerService.BuildImage(ctx, req.DockerfilePath, req.Tag, req.BuildArgs)
+	output, err := h.dockerService.BuildImage(ctx, req.ContextDir, req.DockerfilePath, req.Tag, req.BuildArgs)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			h.logBuildAction("BUILD_FAILED", fmt.Sprintf("Timeout building %s", req.Tag))
-			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: build operation took too long"})
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "timeout: build operation took too long", "logs": output})
 			return
 		}
 		h.logBuildAction("BUILD_FAILED", fmt.Sprintf("Failed to build %s: %s", req.Tag, err.Error()))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "logs": output})
 		return
 	}
 
 	h.logBuildAction("BUILD_SUCCESS", fmt.Sprintf("Successfully built %s", req.Tag))
-	c.JSON(http.StatusOK, gin.H{"message": "built", "tag": req.Tag})
+	c.JSON(http.StatusOK, gin.H{"message": "built", "tag": req.Tag, "logs": output})
 }
 
 func (h *Handler) DeleteBuild(c *gin.Context) {
@@ -119,4 +120,13 @@ func (h *Handler) DeleteBuild(c *gin.Context) {
 
 	h.logBuildAction("BUILD_DELETE_SUCCESS", "Successfully deleted "+repoTag)
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+}
+
+func (h *Handler) GetBuildLogs(c *gin.Context) {
+	logs, err := database.GetImageLogs(h.db, BuildLogID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, logs)
 }
